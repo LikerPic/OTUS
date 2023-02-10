@@ -15,7 +15,9 @@ Codename:       jammy
 ```diff
 +Накатываем актуальную сборку Docker Engine
 ```
-Ссылка на [мануал](https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04-ru) (или [мануал2](https://docs.docker.com/engine/install/ubuntu/))
+Ссылки на установку Docker:
+- [link1](https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04-ru)
+- [link2](https://docs.docker.com/engine/install/ubuntu/)
 ```diff
 +Имеем Docker 23.0.0
 ```
@@ -32,7 +34,7 @@ Client: Docker Engine - Community
 ```
 
 ## сделать каталог `/var/lib/postgres`
-Каталог-то создали, но какие права на него раздать? (_этот и последующие вопросы не пояснялись не вебинаре_) PG работает от пользователя postgres, но его не должно быть хостовой системе из-за докера. Видимо, в каталог должен получить доступ пользователь docker. В общем, дадим доступ на всех =)
+Каталог создали, но какие права на него раздать? (_этот и последующие вопросы не пояснялись не вебинаре_) PG работает от пользователя postgres, но его не должно быть видно хостовой системе из-за докера. Видимо, в каталог должен получить доступ пользователь docker. В общем, дадим доступ на всех =)
 ```console
 vboxuser@Ubuntu22:/var/lib$ sudo mkdir postgres
 vboxuser@Ubuntu22:/var/lib$ ls -ld /var/lib/postgres
@@ -83,7 +85,7 @@ tcp        0      0 0.0.0.0:6432            0.0.0.0:*               LISTEN
 |`--env` , `-e`|     Set environment variables|
 |`--detach` , `-d`| Run container in background and print container ID|
 |`--publish` , `-p`| Publish a container’s port(s) to the host. Формат: <порт хостовой ОС>:<порт внутри контейнера>|
-|`--volume` , `-v` |Bind mount a volume|
+|`--volume` , `-v` |Bind mount a volume. формат: <путь хостовой ОС>:<путь в контейнере>|
 |`--network` |	Connect a container to a network|
 |`--rm`| 		Automatically remove the container when it exits|
 |`--tty` , `-t`|	Allocate a pseudo-TTY|
@@ -96,13 +98,13 @@ tcp        0      0 0.0.0.0:6432            0.0.0.0:*               LISTEN
 ## развернуть контейнер с клиентом postgres
 запустим клиента PG с подключением к сети `pg-net` и сразу подключимся к хосту `pg-server`:
 ```console
-docker run -it --rm --network pg-net --name pg-client postgres:14 psql -h pg-server -U postgres
 vboxuser@Ubuntu22:~$ sudo docker run -it --rm --network pg-net --name pg-client postgres:14 psql -h pg-server -U postgres
 [sudo] password for vboxuser:
 Password for user postgres:
 psql (14.6 (Debian 14.6-1.pgdg110+1))
 Type "help" for help.
 ```
+Клиент подключился без указания порта, а значит подключился по внетреннему порту `5432`.
 
 ## подключится из контейнера с клиентом к контейнеру с сервером и сделать таблицу с парой строк
 ```console
@@ -144,7 +146,14 @@ drwx------ 19 vboxadd root 4096 Feb 10 19:57 /var/lib/postgres
 
 `2. Используем psql из Ubuntu`
 
-Запустим psql в Ubuntu и подключимся к контейнеру через внешний порт 6432. Данные на месте:
+Запустим штатный ssh-клиент из windows для подключения к ВМ:
+```console
+C:\Users>ssh vboxuser@localhost -p 2204
+vboxuser@localhost's password:
+Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.0-58-generic x86_64)
+```
+
+Теперь запустим psql в Ubuntu и подключимся к контейнеру через внешний порт 6432. Данные на месте:
 ```console
 vboxuser@Ubuntu22:~$ psql -h localhost -p 6432 -U postgres
 Password for user postgres:
@@ -222,6 +231,7 @@ virtual_base=# select * from virtual_table;
 `4. Используем pgAdmin из Windows`
 
 Добавим новый сервер с подключением по порту 7432:
+
 ![pgAdmin prop](pgAdmin_prop.png)
 
 В схеме `public` видим нашу таблицу и видим содержимое нашей таблицы:
@@ -229,10 +239,56 @@ virtual_base=# select * from virtual_table;
 
 
 ## удалить контейнер с сервером
+```console
+vboxuser@Ubuntu22:~$ docker ps
+CONTAINER ID   IMAGE         COMMAND                  CREATED       STATUS       PORTS                                       NAMES
+00259314057c   postgres:14   "docker-entrypoint.s…"   3 hours ago   Up 3 hours   0.0.0.0:6432->5432/tcp, :::6432->5432/tcp   pg-server
+vboxuser@Ubuntu22:~$ docker stop 00259314057c
+00259314057c
+vboxuser@Ubuntu22:~$ docker rm 00259314057c
+00259314057c
+```
 
 ## создать его заново
+```console
+vboxuser@Ubuntu22:~$ docker run --name pg-server --network pg-net -e POSTGRES_PASSWORD=postgres -d -p 6432:5432 -v /var/lib/postgres:/var/lib/postgresql/data postgres:14
+6d456bac0bb41f152a965616ab2c12ef080fc30e8c102a5149068db005fae3ef
+vboxuser@Ubuntu22:~$ docker ps
+CONTAINER ID   IMAGE         COMMAND                  CREATED         STATUS         PORTS                                       NAMES
+6d456bac0bb4   postgres:14   "docker-entrypoint.s…"   5 seconds ago   Up 3 seconds   0.0.0.0:6432->5432/tcp, :::6432->5432/tcp   pg-server
+```
 
 ## подключится снова из контейнера с клиентом к контейнеру с сервером
+```console
+vboxuser@Ubuntu22:~$ sudo docker run -it --rm --network pg-net --name pg-client postgres:14 psql -h pg-server -U postgres
+[sudo] password for vboxuser:
+Password for user postgres:
+psql (14.6 (Debian 14.6-1.pgdg110+1))
+Type "help" for help.
+```
 
 ## проверить, что данные остались на месте
+После переподключения данные подтягиваются:
+```console
+postgres=# \l
+                                  List of databases
+     Name     |  Owner   | Encoding |  Collate   |   Ctype    |   Access privileges
+--------------+----------+----------+------------+------------+-----------------------
+ postgres     | postgres | UTF8     | en_US.utf8 | en_US.utf8 |
+ template0    | postgres | UTF8     | en_US.utf8 | en_US.utf8 | =c/postgres          +
+              |          |          |            |            | postgres=CTc/postgres
+ template1    | postgres | UTF8     | en_US.utf8 | en_US.utf8 | =c/postgres          +
+              |          |          |            |            | postgres=CTc/postgres
+ virtual_base | postgres | UTF8     | en_US.utf8 | en_US.utf8 |
+(4 rows)
 
+postgres=# \c virtual_base
+You are now connected to database "virtual_base" as user "postgres".
+virtual_base=# select * from virtual_table;
+ lucky_num
+-----------
+       777
+         7
+       999
+(3 rows)
+```
