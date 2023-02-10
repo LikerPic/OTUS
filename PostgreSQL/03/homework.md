@@ -33,6 +33,8 @@ Client: Docker Engine - Community
 
 >сделать каталог /var/lib/postgres
 
+![Network diagram](Network_diagram.png)
+
 >развернуть контейнер с PostgreSQL 14 смонтировав в него /var/lib/postgres
 
 >развернуть контейнер с клиентом postgres
