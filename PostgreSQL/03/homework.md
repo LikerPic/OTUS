@@ -142,8 +142,97 @@ drwx------ 19 vboxadd root 4096 Feb 10 19:57 /var/lib/postgres
 3. Используем psql из Windows
 4. Используем pgAdmin из Windows
 
+`2. Используем psql из Ubuntu`
+
+Запустим psql в Ubuntu и подключимся к контейнеру через внешний порт 6432. Данные на месте:
+```console
+vboxuser@Ubuntu22:~$ psql -h localhost -p 6432 -U postgres
+Password for user postgres:
+psql (15.1 (Ubuntu 15.1-1.pgdg22.04+1), server 14.6 (Debian 14.6-1.pgdg110+1))
+Type "help" for help.
+
+postgres=# \l
+                                                  List of databases
+     Name     |  Owner   | Encoding |  Collate   |   Ctype    | ICU Locale | Locale Provider |   Access privileges
+--------------+----------+----------+------------+------------+------------+-----------------+-----------------------
+ postgres     | postgres | UTF8     | en_US.utf8 | en_US.utf8 |            | libc            |
+ template0    | postgres | UTF8     | en_US.utf8 | en_US.utf8 |            | libc            | =c/postgres          +
+              |          |          |            |            |            |                 | postgres=CTc/postgres
+ template1    | postgres | UTF8     | en_US.utf8 | en_US.utf8 |            | libc            | =c/postgres          +
+              |          |          |            |            |            |                 | postgres=CTc/postgres
+ virtual_base | postgres | UTF8     | en_US.utf8 | en_US.utf8 |            | libc            |
+(4 rows)
+
+postgres=# \c virtual_base
+psql (15.1 (Ubuntu 15.1-1.pgdg22.04+1), server 14.6 (Debian 14.6-1.pgdg110+1))
+You are now connected to database "virtual_base" as user "postgres".
+virtual_base=# select * from virtual_table;
+ lucky_num
+-----------
+       777
+         7
+       999
+(3 rows)
+```
 
 
+`3. Используем psql из Windows`
+
+Предусмотрим проброс порта 6432 из VM. Нуружу выставим порт 7432:
+![VM ports](VM_ports.png)
+
+Подключаемся, данные на месте:
+```console
+C:\Program Files\PostgreSQL\15\bin>psql -h localhost -p 7432 -U postgres
+Пароль пользователя postgres:
+psql (15.1, сервер 14.6 (Debian 14.6-1.pgdg110+1))
+ПРЕДУПРЕЖДЕНИЕ: Кодовая страница консоли (866) отличается от основной
+                страницы Windows (1251).
+                8-битовые (русские) символы могут отображаться некорректно.
+                Подробнее об этом смотрите документацию psql, раздел
+                "Notes for Windows users".
+Введите "help", чтобы получить справку.
+
+postgres=# \l
+                                                   ╤яшёюъ срч фрээ√ї
+     ╚ь       | ┬ырфхыхЎ | ╩юфшЁютър | LC_COLLATE |  LC_CTYPE  | ыюъры№ ICU | ╧ЁютрщфхЁ ыюърыш |     ╧Ёртр фюёЄєяр
+--------------+----------+-----------+------------+------------+------------+------------------+-----------------------
+ postgres     | postgres | UTF8      | en_US.utf8 | en_US.utf8 |            | libc             |
+ template0    | postgres | UTF8      | en_US.utf8 | en_US.utf8 |            | libc             | =c/postgres          +
+              |          |           |            |            |            |                  | postgres=CTc/postgres
+ template1    | postgres | UTF8      | en_US.utf8 | en_US.utf8 |            | libc             | =c/postgres          +
+              |          |           |            |            |            |                  | postgres=CTc/postgres
+ virtual_base | postgres | UTF8      | en_US.utf8 | en_US.utf8 |            | libc             |
+(4 ёЄЁюъш)
 
 
+postgres=# \c virtual_base
+psql (15.1, сервер 14.6 (Debian 14.6-1.pgdg110+1))
+Вы подключены к базе данных "virtual_base" как пользователь "postgres".
+virtual_base=# select * from virtual_table;
+ lucky_num
+-----------
+       777
+         7
+       999
+(3 ёЄЁюъш)
+```
+
+
+`4. Используем pgAdmin из Windows`
+
+Добавим новый сервер с подключением по порту 7432:
+![pgAdmin prop](pgAdmin_prop.png)
+
+В схеме `public` видим нашу таблицу и видим содержимое нашей таблицы:
+![pgAdmin query](pgAdmin_query.png)
+
+
+## удалить контейнер с сервером
+
+## создать его заново
+
+## подключится снова из контейнера с клиентом к контейнеру с сервером
+
+## проверить, что данные остались на месте
 
