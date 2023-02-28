@@ -101,10 +101,58 @@ Base            232G  136G   97G  59% /mnt/data
 ```
 
 ## сделайте пользователя postgres владельцем /mnt/data - chown -R postgres:postgres /mnt/data/
+```condsole
+vboxuser@Ubuntu22:/mnt$ sudo chown -R postgres:postgres /mnt/data/
+vboxuser@Ubuntu22:/mnt$ ll
+total 8
+drwxr-xr-x  3 root root   4096 Feb 28 23:23 ./
+drwxr-xr-x 20 root root   4096 Feb  7 23:09 ../
+drwxrwx---  1 root vboxsf    0 Feb 28 23:49 data/
+```
+Эффекта нет :(
+В инете есть [подсказка](https://superuser.com/questions/640027/why-cant-i-chown-a-virtualbox-shared-folder), что общий каталог надо перемонтировать под нужным пользователем.
+Для этого сначала узнаем id пользователя postgres:
+```condsole
+vboxuser@Ubuntu22:/mnt$ sudo -u postgres id
+uid=130(postgres) gid=137(postgres) groups=137(postgres),114(ssl-cert)
+```
+Перемонтируем:
+```console
+vboxuser@Ubuntu22:/mnt$ sudo mount -t vboxsf -o remount,gid=137,uid=130,rw Base /mnt/data/
+vboxuser@Ubuntu22:/mnt$ mount | grep data
+Base on /mnt/data type vboxsf (rw,nodev,relatime,iocharset=utf8,uid=130,gid=137)
+```
+проверяем:
+```console
+vboxuser@Ubuntu22:/mnt$ ll
+total 8
+drwxr-xr-x  3 root     root     4096 Feb 28 23:23 ./
+drwxr-xr-x 20 root     root     4096 Feb  7 23:09 ../
+drwxrwxrwx  1 postgres postgres    0 Feb 28 23:49 data/
+```
+Получилось.
 
 ## перенесите содержимое /var/lib/postgres/13 в /mnt/data - mv /var/lib/postgresql/13 /mnt/data
+```console
+sudo mv /var/lib/postgresql/15 /mnt/data
+```
+Проверяем:
+```console
+vboxuser@Ubuntu22:/mnt$ sudo ls -la /var/lib/postgresql/15/main/base/16401 | grep 16402
+ls: cannot access '/var/lib/postgresql/15/main/base/16401': No such file or directory
+vboxuser@Ubuntu22:/mnt$ sudo ls -la /mnt/data/15/main/base/16401 | grep 16402
+-rwxrwxrwx 1 postgres postgres   8192 Feb 28 22:53 16402
+```
+
 ## попытайтесь запустить кластер - sudo -u postgres pg_ctlcluster 13 main start
+```console
+vboxuser@Ubuntu22:/mnt$ sudo -u postgres pg_ctlcluster 15 main start
+Error: /var/lib/postgresql/15/main is not accessible or does not exist
+```
 ## напишите получилось или нет и почему
+Не получилось. Ругается на отсутствие каталога `$PGDATA=/var/lib/postgresql/15/main`
+То есть, при запуске кластера система читаем конфиг postgresql.conf и далее проверяет существование $PGDATA (aka data_directory)
+
 ## задание: найти конфигурационный параметр в файлах раположенных в /etc/postgresql/13/main который надо поменять и поменяйте его
 ## напишите что и почему поменяли
 ## попытайтесь запустить кластер - sudo -u postgres pg_ctlcluster 13 main start
