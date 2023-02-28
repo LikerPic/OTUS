@@ -110,6 +110,7 @@ drwxr-xr-x 20 root root   4096 Feb  7 23:09 ../
 drwxrwx---  1 root vboxsf    0 Feb 28 23:49 data/
 ```
 Эффекта нет :(
+
 В инете есть [подсказка](https://superuser.com/questions/640027/why-cant-i-chown-a-virtualbox-shared-folder), что общий каталог надо перемонтировать под нужным пользователем.
 Для этого сначала узнаем id пользователя postgres:
 ```condsole
@@ -154,9 +155,80 @@ Error: /var/lib/postgresql/15/main is not accessible or does not exist
 То есть, при запуске кластера система читаем конфиг postgresql.conf и далее проверяет существование $PGDATA (aka data_directory)
 
 ## задание: найти конфигурационный параметр в файлах раположенных в /etc/postgresql/13/main который надо поменять и поменяйте его
+Чтобы по-честному найти путь к файлу конфигурации нужно вывести `show config_file;`, но пока сервис лежит такое не прокатит:
+```console
+vboxuser@Ubuntu22:/mnt$ sudo -u postgres psql
+psql: error: connection to server on socket "/var/run/postgresql/.s.PGSQL.5432" failed: No such file or directory
+        Is the server running locally and accepting connections on that socket?
+```
+
+Сделаем хитрость. Запустим предварительно склонированную VM `Ubuntu_22_clone` и подсмотрим там:
+```console
+vboxuser@Ubuntu22:~$ sudo -u postgres psql
+postgres=# show config_file;
+               config_file
+-----------------------------------------
+ /etc/postgresql/15/main/postgresql.conf
+(1 row)
+```
+
 ## напишите что и почему поменяли
+Теперь, зная полный путь до файла конфигурации `/etc/postgresql/15/main/postgresql.conf` изменим настройку `data_directory` в файле:
+```console
+sudo nano /etc/postgresql/15/main/postgresql.conf
+```
+было:
+```diff
+-data_directory = '/var/lib/postgresql/15/main'          # use data in another directory
+```
+стало:
+```diff
++data_directory = '/mnt/data/15/main'            # use data in another directory
+```
 ## попытайтесь запустить кластер - sudo -u postgres pg_ctlcluster 13 main start
+Перед запуском можно даже перепроверить, что PG подхватывает новый путь '$PGDATA'
+```console
+vboxuser@Ubuntu22:/mnt$ pg_lsclusters
+Ver Cluster Port Status Owner    Data directory    Log file
+15  main    5432 down   postgres /mnt/data/15/main /var/log/postgresql/postgresql-15-main.log
+```
+Запускаем:
+```console
+vboxuser@Ubuntu22:/mnt$ sudo -u postgres pg_ctlcluster 15 main start
+Warning: the cluster will not be running as a systemd service. Consider using systemctl:
+  sudo systemctl start postgresql@15-main
+Error: /usr/lib/postgresql/15/bin/pg_ctl /usr/lib/postgresql/15/bin/pg_ctl start -D /mnt/data/15/main -l /var/log/postgresql/postgresql-15-main.log -s -o  -c config_file="/etc/postgresql/15/main/postgresql.conf"  exited with status 1:
+2023-03-01 00:32:22.615 MSK [186353] FATAL:  data directory "/mnt/data/15/main" has invalid permissions
+2023-03-01 00:32:22.615 MSK [186353] DETAIL:  Permissions should be u=rwx (0700) or u=rwx,g=rx (0750).
+pg_ctl: could not start server
+Examine the log output.
+vboxuser@Ubuntu22:/mnt$ pg_lsclusters
+Ver Cluster Port Status Owner    Data directory    Log file
+15  main    5432 down   postgres /mnt/data/15/main /var/log/postgresql/postgresql-15-main.log
+```
+
 ## напишите получилось или нет и почему
+Не получилось. Теперь постгресу не нравится маска доступа на каталог $PGDATA.
+Так как chmod не работает, то придется решать вопрос снова через mount. PG требует маску u=rwx (0700) или u=rwx,g=rx (0750). Интернет подсказывает, что в mount есть опция umask. Высляем umask с помощью любого онлайн-калькулятора и получаем umask=077.
+Перемонтируем и проверим наш файл:
+```console
+vboxuser@Ubuntu22:/mnt$ sudo mount -t vboxsf -o remount,gid=137,uid=130,umask=077,rw Base /mnt/data/
+vboxuser@Ubuntu22:/mnt$ sudo ls -la /mnt/data/15/main/base/16401 | grep 16402
+-rwx------ 1 postgres postgres   8192 Feb 28 22:53 16402
+```
+Выглядит неплохо.
+Стартуем PG:
+```console
+vboxuser@Ubuntu22:/mnt$ sudo -u postgres pg_ctlcluster 15 main start
+Warning: the cluster will not be running as a systemd service. Consider using systemctl:
+  sudo systemctl start postgresql@15-main
+vboxuser@Ubuntu22:/mnt$ pg_lsclusters
+Ver Cluster Port Status Owner     Data directory    Log file
+15  main    5432 online <unknown> /mnt/data/15/main /var/log/postgresql/postgresql-15-main.log
+```
+Получилось!
+
+
 ## зайдите через через psql и проверьте содержимое ранее созданной таблицы
 
 ## задание со звездочкой *: не удаляя существующий GCE инстанс сделайте новый, поставьте на его PostgreSQL, удалите файлы с данными из /var/lib/postgres, перемонтируйте внешний диск который сделали ранее от первой виртуальной машины ко второй и запустите PostgreSQL на второй машине так чтобы он работал с данными на внешнем диске, расскажите как вы это сделали и что в итоге получилось. ДЗ оформите в markdown на github с описанием что делали и с какими проблемами столкнулись.
