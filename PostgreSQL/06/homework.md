@@ -36,7 +36,7 @@ vboxuser@Ubuntu22:~$ pg_lsclusters
 Ver Cluster Port Status Owner    Data directory              Log file
 15  main    5432 online postgres /var/lib/postgresql/15/main /var/log/postgresql/postgresql-15-main.log
 ```
-Обращаем внимание на путь `$PGDATA=/var/lib/postgresql/15/main`. Ниже от нас потреюуется изменрить эту настройку.
+Обращаем внимание на путь `$PGDATA=/var/lib/postgresql/15/main`. Ниже от нас потребуется изменить эту настройку.
 
 ## зайдите из под пользователя postgres в psql и сделайте произвольную таблицу с произвольным содержимым
 Прежде всего сделаем полный клон нашей VM, назовем его `Ubuntu_22_clone`. Это нам пригодится в задании со звездочкой* в конце.
@@ -87,7 +87,7 @@ Ver Cluster Port Status Owner    Data directory              Log file
 
 ## создайте новый standard persistent диск GKE через Compute Engine -> Disks в том же регионе и зоне что GCE инстанс размером например 10GB
 ## добавьте свеже-созданный диск к виртуальной машине - надо зайти в режим ее редактирования и дальше выбрать пункт attach existing disk
-В качестве внешнего диска используем Общую папку м/у хостовй и гостевой ОС и смонтируем её по пути '/mnt/data'
+В качестве внешнего диска используем Общую папку м/у хостовой и гостевой ОС и смонтируем её по пути '/mnt/data'
 ```console
 vboxuser@Ubuntu22:~$ df -h
 Filesystem      Size  Used Avail Use% Mounted on
@@ -103,7 +103,7 @@ Base            232G  136G   97G  59% /mnt/data
 ```
 
 ## сделайте пользователя postgres владельцем /mnt/data - chown -R postgres:postgres /mnt/data/
-```condsole
+```console
 vboxuser@Ubuntu22:/mnt$ sudo chown -R postgres:postgres /mnt/data/
 vboxuser@Ubuntu22:/mnt$ ll
 total 8
@@ -115,7 +115,7 @@ drwxrwx---  1 root vboxsf    0 Feb 28 23:49 data/
 
 В инете есть [подсказка](https://superuser.com/questions/640027/why-cant-i-chown-a-virtualbox-shared-folder), что общий каталог надо перемонтировать под нужным пользователем.
 Для этого сначала узнаем id пользователя postgres:
-```condsole
+```console
 vboxuser@Ubuntu22:/mnt$ sudo -u postgres id
 uid=130(postgres) gid=137(postgres) groups=137(postgres),114(ssl-cert)
 ```
@@ -211,7 +211,7 @@ Ver Cluster Port Status Owner    Data directory    Log file
 
 ## напишите получилось или нет и почему
 Не получилось. Теперь постгресу не нравится маска доступа на каталог $PGDATA.
-Так как chmod не работает, то придется решать вопрос снова через mount. PG требует маску u=rwx (0700) или u=rwx,g=rx (0750). Интернет подсказывает, что в mount есть опция umask. Высляем umask с помощью любого онлайн-калькулятора и получаем umask=077.
+Так как chmod не работает, то придется решать вопрос снова через mount. PG требует маску u=rwx (0700) или u=rwx,g=rx (0750). Интернет подсказывает, что в mount есть опция umask. Вычисляем umask с помощью любого онлайн-калькулятора и получаем umask=077.
 Перемонтируем и проверим наши файлы:
 ```console
 vboxuser@Ubuntu22:/mnt$ sudo mount -t vboxsf -o remount,gid=137,uid=130,umask=077,rw Base /mnt/data/
