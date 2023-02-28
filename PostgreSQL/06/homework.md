@@ -5,8 +5,10 @@
 2. Монтируем внешний диск по локальному пути /mnt/data
 3. Переносим данные кластера из $PGDATA на внешний диск /mnt/data
 4. Перенастраиваем PG так, чтобы $PGDATA смотрела на новый путь /mnt/data.
+
 Доп. задание со звездочкой *:
-5. Монтируем внешний диск с данными по локальному пути /mnt/data2 в другую VM, проверяем работоспособность.
+
+5. Монтируем внешний диск с данными по локальному пути /mnt/data в другую VM, проверяем работоспособность.
 
 По сути, это задание схоже с заданием к лекции [03](https://github.com/LikerPic/OTUS/blob/master/PostgreSQL/03/homework.md), где данные PG кластера за счет маппинга лежали особняком (снаружи контейнеров) и далее к БД шло обращение из разных контейнеров.
 
@@ -210,9 +212,11 @@ Ver Cluster Port Status Owner    Data directory    Log file
 ## напишите получилось или нет и почему
 Не получилось. Теперь постгресу не нравится маска доступа на каталог $PGDATA.
 Так как chmod не работает, то придется решать вопрос снова через mount. PG требует маску u=rwx (0700) или u=rwx,g=rx (0750). Интернет подсказывает, что в mount есть опция umask. Высляем umask с помощью любого онлайн-калькулятора и получаем umask=077.
-Перемонтируем и проверим наш файл:
+Перемонтируем и проверим наши файлы:
 ```console
 vboxuser@Ubuntu22:/mnt$ sudo mount -t vboxsf -o remount,gid=137,uid=130,umask=077,rw Base /mnt/data/
+vboxuser@Ubuntu22:/mnt$ sudo ls -ld /mnt/data/15/main
+drwx------ 1 postgres postgres 4096 Mar  1 01:07 /mnt/data/15/main
 vboxuser@Ubuntu22:/mnt$ sudo ls -la /mnt/data/15/main/base/16401 | grep 16402
 -rwx------ 1 postgres postgres   8192 Feb 28 22:53 16402
 ```
@@ -230,5 +234,138 @@ Ver Cluster Port Status Owner     Data directory    Log file
 
 
 ## зайдите через через psql и проверьте содержимое ранее созданной таблицы
+```console
+vboxuser@Ubuntu22:/mnt$ sudo -u postgres psql
+psql (15.1 (Ubuntu 15.1-1.pgdg22.04+1))
+Type "help" for help.
 
-## задание со звездочкой *: не удаляя существующий GCE инстанс сделайте новый, поставьте на его PostgreSQL, удалите файлы с данными из /var/lib/postgres, перемонтируйте внешний диск который сделали ранее от первой виртуальной машины ко второй и запустите PostgreSQL на второй машине так чтобы он работал с данными на внешнем диске, расскажите как вы это сделали и что в итоге получилось. ДЗ оформите в markdown на github с описанием что делали и с какими проблемами столкнулись.
+postgres=# \l
+                                                  List of databases
+    Name    |  Owner   | Encoding |   Collate   |    Ctype    | ICU Locale | Locale Provider |   Access privileges
+------------+----------+----------+-------------+-------------+------------+-----------------+-----------------------
+ db_lesson7 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            |
+ iso        | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            |
+ postgres   | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            |
+ template0  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            | =c/postgres          +
+            |          |          |             |             |            |                 | postgres=CTc/postgres
+ template1  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            | =c/postgres          +
+            |          |          |             |             |            |                 | postgres=CTc/postgres
+(5 rows)
+
+postgres=# \c db_lesson7
+You are now connected to database "db_lesson7" as user "postgres".
+db_lesson7=# select * from tbl_lesson7;
+ lucky_num
+-----------
+       555
+       777
+(2 rows)
+```
+Ок. Данные подтянулись.
+
+## задание со звездочкой *: не удаляя существующий GCE инстанс сделайте новый, поставьте на его PostgreSQL, удалите файлы с данными из /var/lib/postgres, перемонтируйте внешний диск который сделали ранее от первой виртуальной машины ко второй и запустите PostgreSQL на второй машине так чтобы он работал с данными на внешнем диске, расскажите как вы это сделали и что в итоге получилось.
+
+Останавливаем VM `Ubuntu_22`. 
+
+Настроим для VM `Ubuntu_22_clone` Общий каталог от `Ubuntu_22`:
+
+![Shared folder](VBox_shared_folder.png)
+
+Запустим VM `Ubuntu_22_clone`.
+
+Проверим сразу доступы на каталоги БД:
+```console
+vboxuser@Ubuntu22:~$ sudo ls -ld /mnt/data/15/main
+drwxrwx--- 1 root vboxsf 4096 Mar  1 01:21 /mnt/data/15/main
+```
+Перемонтируем и проверяем:
+```console
+vboxuser@Ubuntu22:~$ sudo mount -t vboxsf -o remount,gid=137,uid=130,umask=077,rw Base /mnt/data/
+vboxuser@Ubuntu22:~$ sudo ls -ld /mnt/data/15/main
+drwx------ 1 postgres postgres 4096 Mar  1 01:21 /mnt/data/15/main
+```
+Теперь Ок.
+
+Убедимся, что мы имеем старый вариант кластера на котором нет нашей БД `db_lesson7`:
+```console
+vboxuser@Ubuntu22:~$ pg_lsclusters
+Ver Cluster Port Status Owner    Data directory              Log file
+15  main    5432 online postgres /var/lib/postgresql/15/main /var/log/postgresql/postgresql-15-main.log
+vboxuser@Ubuntu22:~$ sudo -u postgres psql
+could not change directory to "/home/vboxuser": Permission denied
+psql (15.1 (Ubuntu 15.1-1.pgdg22.04+1))
+Type "help" for help.
+
+postgres=# \l
+                                                 List of databases
+   Name    |  Owner   | Encoding |   Collate   |    Ctype    | ICU Locale | Locale Provider |   Access privileges
+-----------+----------+----------+-------------+-------------+------------+-----------------+-----------------------
+ iso       | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            |
+ postgres  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            |
+ template0 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            | =c/postgres          +
+           |          |          |             |             |            |                 | postgres=CTc/postgres
+ template1 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            | =c/postgres          +
+           |          |          |             |             |            |                 | postgres=CTc/postgres
+(4 rows)
+```
+
+Остановим кластер:
+```console
+vboxuser@Ubuntu22:~$ sudo -u postgres pg_ctlcluster 15 main stop
+Warning: stopping the cluster using pg_ctlcluster will mark the systemd unit as failed. Consider using systemctl:
+  sudo systemctl stop postgresql@15-main
+vboxuser@Ubuntu22:~$ pg_lsclusters
+Ver Cluster Port Status Owner    Data directory              Log file
+15  main    5432 down   postgres /var/lib/postgresql/15/main /var/log/postgresql/postgresql-15-main.log
+```
+
+Удаляем данные текущего кластера:
+```console
+sudo rm -R /var/lib/postgresql/15/main
+vboxuser@Ubuntu22:~$ sudo -u postgres pg_ctlcluster 15 main start
+Error: /var/lib/postgresql/15/main is not accessible or does not exist
+```
+
+Перенастраиваем $PGDATA на /mnt/data как это делали выше:
+```console
+sudo nano /etc/postgresql/15/main/postgresql.conf
+vboxuser@Ubuntu22:~$ pg_lsclusters
+Ver Cluster Port Status Owner     Data directory    Log file
+15  main    5432 down   <unknown> /mnt/data/15/main /var/log/postgresql/postgresql-15-main.log
+```
+Стартуем PG:
+```console
+vboxuser@Ubuntu22:~$ sudo -u postgres pg_ctlcluster 15 main start
+Warning: the cluster will not be running as a systemd service. Consider using systemctl:
+  sudo systemctl start postgresql@15-main
+```
+
+Проверяем наши данные:
+```console
+vboxuser@Ubuntu22:~$ sudo -u postgres psql
+psql (15.1 (Ubuntu 15.1-1.pgdg22.04+1))
+Type "help" for help.
+
+postgres=# \l
+                                                  List of databases
+    Name    |  Owner   | Encoding |   Collate   |    Ctype    | ICU Locale | Locale Provider |   Access privileges
+------------+----------+----------+-------------+-------------+------------+-----------------+-----------------------
+ db_lesson7 | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            |
+ iso        | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            |
+ postgres   | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            |
+ template0  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            | =c/postgres          +
+            |          |          |             |             |            |                 | postgres=CTc/postgres
+ template1  | postgres | UTF8     | en_US.UTF-8 | en_US.UTF-8 |            | libc            | =c/postgres          +
+            |          |          |             |             |            |                 | postgres=CTc/postgres
+(5 rows)
+
+postgres=# \c db_lesson7
+You are now connected to database "db_lesson7" as user "postgres".
+db_lesson7=# select * from tbl_lesson7 ;
+ lucky_num
+-----------
+       555
+       777
+(2 rows)
+```
+Ок. Все данные на месте.
