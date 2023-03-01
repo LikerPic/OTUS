@@ -1,4 +1,4 @@
-# 06. Логический уровень PostgreSQL 
+# 07. Логический уровень PostgreSQL 
 
 ## 1 создайте новый кластер PostgresSQL 14
 ```console
