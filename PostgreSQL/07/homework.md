@@ -305,14 +305,74 @@ testdb=> select * from testnm.t1;
 Ура!
 ## 34 теперь попробуйте выполнить команду create table t2(c1 integer); insert into t2 values (2);
 ```console
+testdb=> create table t2(c1 integer); insert into t2 values (2);
+CREATE TABLE
+INSERT 0 1
 ```
 ## 35 а как так? нам же никто прав на создание таблиц и insert в них под ролью readonly?
+```console
+testdb=> \dt
+        List of relations
+ Schema | Name | Type  |  Owner
+--------+------+-------+----------
+ public | t2   | table | testread
+(1 row)
+
+testdb=> \dn+
+                          List of schemas
+  Name  |  Owner   |  Access privileges   |      Description
+--------+----------+----------------------+------------------------
+ public | postgres | postgres=UC/postgres+| standard public schema
+        |          | =UC/postgres         |
+ testnm | postgres | postgres=UC/postgres+|
+        |          | readonly=U/postgres  |
+(2 rows)
+```
+Таблица создана в схеме `public`. Судя по всему для этой схемы доступ по умолчанию дается всем на всё при добавлении новых объектов. Либо же дело в том, что `testread` как владелец получил полный доступ на таблицу `t2`.
 ## 36 есть идеи как убрать эти права? если нет - смотрите шпаргалку
+Предположу:
+- либо сменить владельца у таблицы `t2`;
+- либо изменить доступ по умолчанию `ALTER DEFAULT PRIVILEGES` в схеме `public` (будет применяться для вновь созданных объектов).
+ответ:
+> это все потому что search_path указывает в первую очередь на схему public. А схема public создается в каждой базе данных по умолчанию. И grant на все действия в этой схеме дается роли public. А роль public добавляется всем новым пользователям. Соответсвенно каждый пользователь может по умолчанию создавать объекты в схеме public любой базы данных, ес-но если у него есть право на подключение к этой базе данных. Чтобы раз и навсегда забыть про роль public - а в продакшн базе данных про нее лучше забыть - выполните следующие действия 
+```console
+\c testdb postgres; 
+revoke CREATE on SCHEMA public FROM public; 
+revoke all on DATABASE testdb FROM public; 
+\c testdb testread; 
+```
+Выполняем подсказку:
+```console
+testdb=> \c testdb postgres
+Password for user postgres:
+psql (15.1 (Ubuntu 15.1-1.pgdg22.04+1), server 14.6 (Debian 14.6-1.pgdg110+1))
+You are now connected to database "testdb" as user "postgres".
+testdb=# revoke CREATE on SCHEMA public FROM public;
+REVOKE
+testdb=# revoke all on DATABASE testdb FROM public;
+REVOKE
+testdb=# \c testdb testread;
+Password for user testread:
+psql (15.1 (Ubuntu 15.1-1.pgdg22.04+1), server 14.6 (Debian 14.6-1.pgdg110+1))
+You are now connected to database "testdb" as user "testread".
+```
+
 ## 37 если вы справились сами то расскажите что сделали и почему, если смотрели шпаргалку - объясните что сделали и почему выполнив указанные в ней команды
+Первая команда отзывает доступ на `CREATE` в схеме `public` у роли `public`;
+Вторая команда отзывает все доступы в БД `testdb` у роли `public`.
+
 ## 38 теперь попробуйте выполнить команду create table t3(c1 integer); insert into t2 values (2);
 ```console
+testdb=> create table t3(c1 integer); insert into t2 values (2);
+ERROR:  permission denied for schema public
+LINE 1: create table t3(c1 integer);
+                     ^
+INSERT 0 1
 ```
 ## 39 расскажите что получилось и почему
+На этот раз создать новую таблицу создать не удалось из-за отказа в доступе, т.к. доступ на создание таблиц ранее был отозван `revoke CREATE` в схеме `public`.
+В таблицу t2 успешно вставилась строка. Доступ на это есть как владельцу таблицы.
+
 
 
 Ссылки по теме:
