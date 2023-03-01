@@ -92,12 +92,47 @@ testdb=# \dn+
 ```
 ## 11 дайте новой роли право на select для всех таблиц схемы testnm
 ```console
+testdb=# grant select on all tables in schema testnm to readonly;
+GRANT
+```
+Изменений в описании доступов к схеме не видно (виджимо это проверяется на конкретной таблице, а не на схеме):
+```console
+testdb=# \dn+
+                          List of schemas
+  Name  |  Owner   |  Access privileges   |      Description
+--------+----------+----------------------+------------------------
+ public | postgres | postgres=UC/postgres+| standard public schema
+        |          | =UC/postgres         |
+ testnm | postgres | postgres=UC/postgres+|
+        |          | readonly=U/postgres  |
+(2 rows)
 ```
 ## 12 создайте пользователя testread с паролем test123
 ```console
+testdb=# create user testread with password 'test123';
+CREATE ROLE
+testdb=# \du
+                                   List of roles
+ Role name |                         Attributes                         | Member of
+-----------+------------------------------------------------------------+-----------
+ postgres  | Superuser, Create role, Create DB, Replication, Bypass RLS | {}
+ readonly  | Cannot login                                               | {}
+ testread  |                                                            | {}
 ```
 ## 13 дайте роль readonly пользователю testread
 ```console
+testdb=# grant readonly to testread;
+GRANT ROLE
+```
+Видим изменения в графе `Member of` для пользователя `readonly`:
+```console
+testdb=# \du
+                                    List of roles
+ Role name |                         Attributes                         | Member of
+-----------+------------------------------------------------------------+------------
+ postgres  | Superuser, Create role, Create DB, Replication, Bypass RLS | {}
+ readonly  | Cannot login                                               | {}
+ testread  |                                                            | {readonly}
 ```
 ## 14 зайдите под пользователем testread в базу данных testdb
 ```console
@@ -155,3 +190,11 @@ testdb=# \dn+
 ```console
 ```
 ## 39 расскажите что получилось и почему
+
+
+Ссылки по теме:
+https://postgrespro.ru/docs/postgresql/14/sql-grant
+https://www.postgresql.org/docs/current/app-psql.html
+https://www.postgresql.org/docs/current/sql-createrole.html
+https://www.postgresql.org/docs/current/sql-createuser.html
+https://postgrespro.ru/docs/postgresql/14/sql-alteruser
