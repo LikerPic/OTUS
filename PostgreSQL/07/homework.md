@@ -14,27 +14,81 @@ Type "help" for help.
 ```
 ## 3 создайте новую базу данных testdb
 ```console
+postgres=# create database testdb;
+CREATE DATABASE
 ```
 ## 4 зайдите в созданную базу данных под пользователем postgres
 ```console
+postgres=# \c testdb
+psql (15.1 (Ubuntu 15.1-1.pgdg22.04+1), server 14.6 (Debian 14.6-1.pgdg110+1))
+You are now connected to database "testdb" as user "postgres".
 ```
 ## 5 создайте новую схему testnm
 ```console
+testdb=# create schema testnm;
+CREATE SCHEMA
+testdb=# \dn
+  List of schemas
+  Name  |  Owner
+--------+----------
+ public | postgres
+ testnm | postgres
+(2 rows)
 ```
 ## 6 создайте новую таблицу t1 с одной колонкой c1 типа integer
 ```console
+testdb=# create table t1 (c1 int);
+CREATE TABLE
 ```
 ## 7 вставьте строку со значением c1=1
 ```console
+testdb=# insert into t1 values (1);
+INSERT 0 1
 ```
 ## 8 создайте новую роль readonly
 ```console
+testdb=# create role readonly;
+CREATE ROLE
+testdb=# \du
+                                   List of roles
+ Role name |                         Attributes                         | Member of
+-----------+------------------------------------------------------------+-----------
+ postgres  | Superuser, Create role, Create DB, Replication, Bypass RLS | {}
+ readonly  | Cannot login                                               | {}
 ```
 ## 9 дайте новой роли право на подключение к базе данных testdb
 ```console
+testdb=# grant connect on database testdb to readonly;
+GRANT
 ```
+В писке баз теперь витдим упоминание пользователя `readonly` с доступом `c` (CONNECT):
+```console
+testdb=# \l testdb
+                                               List of databases
+  Name  |  Owner   | Encoding |  Collate   |   Ctype    | ICU Locale | Locale Provider |   Access privileges
+--------+----------+----------+------------+------------+------------+-----------------+-----------------------
+ testdb | postgres | UTF8     | en_US.utf8 | en_US.utf8 |            | libc            | =Tc/postgres         +
+        |          |          |            |            |            |                 | postgres=CTc/postgres+
+        |          |          |            |            |            |                 | readonly=c/postgres
+(1 row)
+```
+
 ## 10 дайте новой роли право на использование схемы testnm
 ```console
+testdb=# grant usage on schema testnm to readonly;
+GRANT
+```
+Теперь для схемы `testnm` видим доступ для пользователя `readonly` с доступом `U` (USAGE):
+```
+testdb=# \dn+
+                          List of schemas
+  Name  |  Owner   |  Access privileges   |      Description
+--------+----------+----------------------+------------------------
+ public | postgres | postgres=UC/postgres+| standard public schema
+        |          | =UC/postgres         |
+ testnm | postgres | postgres=UC/postgres+|
+        |          | readonly=U/postgres  |
+(2 rows)
 ```
 ## 11 дайте новой роли право на select для всех таблиц схемы testnm
 ```console
