@@ -292,7 +292,21 @@ autovacuum включается, когда кол-во мертвых корт�
 | autovacuum_vacuum_scale_factor|0.2|0.15|0.1|0.05|0.025|
 | autovacuum_vacuum_cost_delay|2|5|10|15|20|
 | autovacuum_vacuum_cost_limit|200|500|1000|1300|1500|
-| TPS|557|||||
+| TPS|557|543|550|||
+
+
+СПРАВОЧНО
+
+Подготовка контейнера перед каждым тестом:
+1. `docker stop pg_lesson8; docker rm pg_lesson8`
+2. Редактируем конфиг файл `my-postgres.conf`
+3. `docker run -d --name pg_lesson8 -v "$PWD/my-postgres.conf":/etc/postgresql/postgresql.conf -e POSTGRES_PASSWORD=postgres -p 6432:5432 postgres:14 -c "config_file=/etc/postgresql/postgresql.conf"`
+
+Запуск каждого теста:
+1. `echo "TEST 4"`
+2. `psql -h localhost -p 6432 -U postgres -c "select name,setting from pg_settings where name ='autovacuum_max_workers'"`
+3. `pgbench -i -h localhost -p 6432 -U postgres postgres`
+4. `pgbench -c 8 -P 60 -T 600 -h localhost -p 6432 -U postgres postgres`
 
 ## построить график по получившимся значениям так чтобы получить максимально ровное значение tps
 
