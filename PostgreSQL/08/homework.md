@@ -242,6 +242,28 @@ tps = 556.606185 (without initial connection time)
 ```
 
 ## дальше настроить autovacuum максимально эффективно
+Для `autovacuum` предусмотрено 14 параметров:
+```console
+postgres=# SELECT name, setting, context, short_desc FROM pg_settings WHERE name like 'autovacuum%';
+                 name                  |  setting  |  context   |                                        short_desc
+---------------------------------------+-----------+------------+-------------------------------------------------------------------------------------------
+ autovacuum                            | on        | sighup     | Запускает подпроцесс автоочистки.
+ autovacuum_analyze_scale_factor       | 0.1       | sighup     | Отношение числа добавлений, обновлений или удалений кортежей к reltuples, определяющее потребность в анализе.
+ autovacuum_analyze_threshold          | 50        | sighup     | Минимальное число добавлений, изменений или удалений кортежей, вызывающее анализ.
+ autovacuum_freeze_max_age             | 200000000 | postmaster | Возраст, при котором необходима автоочистка таблицы для предотвращения зацикливания ID транзакций.
+ autovacuum_max_workers                | 3         | postmaster | Задаёт предельное число одновременно выполняющихся рабочих процессов автоочистки.
+ autovacuum_multixact_freeze_max_age   | 400000000 | postmaster | Возраст multixact, при котором необходима автоочистка таблицы для предотвращения зацикливания multixact.
+ autovacuum_naptime                    | 60        | sighup     | Время простоя между запусками автоочистки.
+ autovacuum_vacuum_cost_delay          | 2         | sighup     | Задержка очистки для автоочистки (в миллисекундах).
+ autovacuum_vacuum_cost_limit          | -1        | sighup     | Суммарная стоимость очистки, при которой нужна передышка, для автоочистки.
+ autovacuum_vacuum_insert_scale_factor | 0.2       | sighup     | Отношение числа добавлений кортежей к reltuples, определяющее потребность в очистке.
+ autovacuum_vacuum_insert_threshold    | 1000      | sighup     | Минимальное число добавлений кортежей, вызывающее очистку; при -1 такая очистка отключается.
+ autovacuum_vacuum_scale_factor        | 0.2       | sighup     | Отношение числа обновлений или удалений кортежей к reltuples, определяющее потребность в очистке.
+ autovacuum_vacuum_threshold           | 50        | sighup     | Минимальное число изменений или удалений кортежей, вызывающее очистку.
+ autovacuum_work_mem                   | -1        | sighup     | Задаёт предельный объём памяти для каждого рабочего процесса автоочистки.
+(14 rows)
+```
+
 
 ## построить график по получившимся значениям так чтобы получить максимально ровное значение tps
 
