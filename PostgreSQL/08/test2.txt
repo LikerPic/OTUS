@@ -1,0 +1,40 @@
+vboxuser@Ubuntu22:/media/sf_Upload$ pgbench -i -h localhost -p 6432 -U postgres postgres
+Password:
+dropping old tables...
+NOTICE:  table "pgbench_accounts" does not exist, skipping
+NOTICE:  table "pgbench_branches" does not exist, skipping
+NOTICE:  table "pgbench_history" does not exist, skipping
+NOTICE:  table "pgbench_tellers" does not exist, skipping
+creating tables...
+generating data (client-side)...
+100000 of 100000 tuples (100%) done (elapsed 0.06 s, remaining 0.00 s)
+vacuuming...
+creating primary keys...
+done in 0.65 s (drop tables 0.00 s, create tables 0.02 s, client-side generate 0.32 s, vacuum 0.21 s, primary keys 0.10 s).
+vboxuser@Ubuntu22:/media/sf_Upload$ pgbench -c 8 -P 60 -T 600 -h localhost -p 6432 -U postgres postgres
+Password:
+pgbench (15.1 (Ubuntu 15.1-1.pgdg22.04+1), server 14.6 (Debian 14.6-1.pgdg110+1))
+starting vacuum...end.
+progress: 60.0 s, 529.3 tps, lat 15.052 ms stddev 8.189, 0 failed
+progress: 120.0 s, 537.5 tps, lat 14.878 ms stddev 7.771, 0 failed
+progress: 180.0 s, 546.0 tps, lat 14.647 ms stddev 7.870, 0 failed
+progress: 240.0 s, 551.8 tps, lat 14.493 ms stddev 7.611, 0 failed
+progress: 300.0 s, 550.3 tps, lat 14.531 ms stddev 7.711, 0 failed
+progress: 360.0 s, 544.9 tps, lat 14.674 ms stddev 7.924, 0 failed
+progress: 420.0 s, 538.7 tps, lat 14.844 ms stddev 8.234, 0 failed
+progress: 480.0 s, 539.9 tps, lat 14.813 ms stddev 8.096, 0 failed
+progress: 540.0 s, 544.8 tps, lat 14.680 ms stddev 7.929, 0 failed
+progress: 600.0 s, 543.1 tps, lat 14.724 ms stddev 7.925, 0 failed
+transaction type: <builtin: TPC-B (sort of)>
+scaling factor: 1
+query mode: simple
+number of clients: 8
+number of threads: 1
+maximum number of tries: 1
+duration: 600 s
+number of transactions actually processed: 325590
+number of failed transactions: 0 (0.000%)
+latency average = 14.732 ms
+latency stddev = 7.929 ms
+initial connection time = 213.022 ms
+tps = 542.810414 (without initial connection time)

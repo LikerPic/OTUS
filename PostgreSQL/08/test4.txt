@@ -1,0 +1,49 @@
+vboxuser@Ubuntu22:/media/sf_Upload$ echo "TEST 4"
+TEST 4
+vboxuser@Ubuntu22:/media/sf_Upload$ psql -h localhost -p 6432 -U postgres -c "select name,setting from pg_settings where name ='autovacuum_max_workers'"
+Password for user postgres:
+          name          | setting
+------------------------+---------
+ autovacuum_max_workers | 9
+(1 row)
+
+vboxuser@Ubuntu22:/media/sf_Upload$ pgbench -i -h localhost -p 6432 -U postgres postgres
+Password:
+dropping old tables...
+NOTICE:  table "pgbench_accounts" does not exist, skipping
+NOTICE:  table "pgbench_branches" does not exist, skipping
+NOTICE:  table "pgbench_history" does not exist, skipping
+NOTICE:  table "pgbench_tellers" does not exist, skipping
+creating tables...
+generating data (client-side)...
+100000 of 100000 tuples (100%) done (elapsed 0.06 s, remaining 0.00 s)
+vacuuming...
+creating primary keys...
+done in 0.61 s (drop tables 0.00 s, create tables 0.01 s, client-side generate 0.29 s, vacuum 0.19 s, primary keys 0.11 s).
+vboxuser@Ubuntu22:/media/sf_Upload$ pgbench -c 8 -P 60 -T 600 -h localhost -p 6432 -U postgres postgres
+Password:
+pgbench (15.1 (Ubuntu 15.1-1.pgdg22.04+1), server 14.6 (Debian 14.6-1.pgdg110+1))
+starting vacuum...end.
+progress: 60.0 s, 546.5 tps, lat 14.579 ms stddev 7.900, 0 failed
+progress: 120.0 s, 552.5 tps, lat 14.476 ms stddev 7.814, 0 failed
+progress: 180.0 s, 538.5 tps, lat 14.851 ms stddev 8.167, 0 failed
+progress: 240.0 s, 547.1 tps, lat 14.616 ms stddev 7.925, 0 failed
+progress: 300.0 s, 539.5 tps, lat 14.824 ms stddev 8.146, 0 failed
+progress: 360.0 s, 543.6 tps, lat 14.713 ms stddev 7.817, 0 failed
+progress: 420.0 s, 546.9 tps, lat 14.622 ms stddev 7.921, 0 failed
+progress: 480.0 s, 538.1 tps, lat 14.862 ms stddev 8.084, 0 failed
+progress: 540.0 s, 546.7 tps, lat 14.628 ms stddev 7.996, 0 failed
+progress: 600.0 s, 545.4 tps, lat 14.663 ms stddev 7.984, 0 failed
+transaction type: <builtin: TPC-B (sort of)>
+scaling factor: 1
+query mode: simple
+number of clients: 8
+number of threads: 1
+maximum number of tries: 1
+duration: 600 s
+number of transactions actually processed: 326688
+number of failed transactions: 0 (0.000%)
+latency average = 14.683 ms
+latency stddev = 7.976 ms
+initial connection time = 213.553 ms
+tps = 544.657180 (without initial connection time)
