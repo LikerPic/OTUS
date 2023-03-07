@@ -263,6 +263,14 @@ postgres=# SELECT name, setting, context, short_desc FROM pg_settings WHERE name
  autovacuum_work_mem                   | -1        | sighup     | Задаёт предельный объём памяти для каждого рабочего процесса автоочистки.
 (14 rows)
 ```
+autovacuum включается, когда кол-во мертвых кортежей превысило порог очистки:
+```
+порог очистки = <базовый порог очистки> + <коэффициент доли для очистки> * <количество кортежей>
+```
+==
+```
+порог очистки = autovacuum_vacuum_threshold + autovacuum_vacuum_scale_factor * pg_class.reltuples
+```
 
 
 ## построить график по получившимся значениям так чтобы получить максимально ровное значение tps
