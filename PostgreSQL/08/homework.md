@@ -314,5 +314,29 @@ autovacuum включается, когда кол-во мертвых корт�
 
 ![Table.png](Table.png)
 
-Итог: максимальное ровное значение TPS показал Тест #3.
+Итог: максимальное ровное значение TPS показал Тест #4.
 
+
+
+---
+Ссылки
+
+https://docs.docker.com/engine/reference/commandline/exec/
+
+https://github.com/docker-library/docs/blob/master/postgres/README.md
+
+https://www.postgresql.org/docs/14/runtime-config.html
+
+https://www.postgresql.org/docs/14/config-setting.html
+
+https://dba.stackexchange.com/questions/112637/can-i-do-vacuum-full-to-pg-largeobject-table
+
+https://www.postgresql.org/docs/14/pgbench.html
+
+https://postgrespro.ru/docs/postgrespro/14/pgbench
+
+https://habr.com/ru/company/postgrespro/blog/452762/
+
+https://postgrespro.ru/docs/postgrespro/14/routine-vacuuming#AUTOVACUUM
+
+https://postgrespro.ru/docs/postgrespro/14/config-setting?lang=ru
