@@ -292,7 +292,7 @@ autovacuum включается, когда кол-во мертвых корт�
 | autovacuum_vacuum_scale_factor|0.2|0.15|0.1|0.05|0.025|
 | autovacuum_vacuum_cost_delay|2|5|10|15|20|
 | autovacuum_vacuum_cost_limit|200|500|1000|1300|1500|
-| TPS|557|543|550|||
+| TPS|557|543|550|545|546|
 
 
 СПРАВОЧНО
