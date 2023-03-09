@@ -123,6 +123,143 @@ log_checkpoints = on
 - статистика из файлов: `pg_waldump -z` (для этого нужно, чтобы система хранила весь необходимый объем транзакций).
 
 **LSN** — это 64-битное целое число, представляющее байтовое смещение в потоке журнала предзаписи. Он выводится в виде двух шестнадцатеричных чисел до 8 цифр каждое, через косую черту, например: 16/B374D848
+---
+
+Запустим сервер с актуальными настройками:
+```console
+vboxuser@Ubuntu22:/media/sf_Upload$ docker stop pg_lesson9; docker rm pg_lesson9
+pg_lesson9
+pg_lesson9
+vboxuser@Ubuntu22:/media/sf_Upload$ docker run -d --name pg_lesson9 -v "$PWD/my-postgres.conf":/etc/postgresql/postgresql.conf -e POSTGRES_PASSWORD=postgres -p 6432:5432 postgres:14 -c "config_file=/etc/postgresql/postgresql.conf"
+a7b99539cd5da976d6a0ef4d1c37767c8bc023751fef120b3bc2364613c136ea
+```
+Выполним инициализацию:
+```console
+vboxuser@Ubuntu22:~$ pgbench -i -h localhost -p 6432 -U postgres postgres
+Password:
+dropping old tables...
+NOTICE:  table "pgbench_accounts" does not exist, skipping
+NOTICE:  table "pgbench_branches" does not exist, skipping
+NOTICE:  table "pgbench_history" does not exist, skipping
+NOTICE:  table "pgbench_tellers" does not exist, skipping
+creating tables...
+generating data (client-side)...
+100000 of 100000 tuples (100%) done (elapsed 0.06 s, remaining 0.00 s)
+vacuuming...
+creating primary keys...
+done in 0.51 s (drop tables 0.00 s, create tables 0.01 s, client-side generate 0.29 s, vacuum 0.11 s, primary keys 0.10 s).
+```
+Получим срезы перед сбором статистики.
+Посмотрим на файлы:
+```condsole
+vboxuser@Ubuntu22:/media/sf_Upload$ docker exec -it pg_lesson9 bash
+root@a7b99539cd5d:/# cd /var/lib/postgresql/data/pg_wal/
+root@a7b99539cd5d:/var/lib/postgresql/data/pg_wal# ls -la
+total 32780
+drwx------  3 postgres postgres     4096 Mar  9 23:01 .
+drwx------ 20 postgres postgres     4096 Mar  9 23:00 ..
+-rw-------  1 postgres postgres 16777216 Mar  9 23:01 000000010000000000000001
+-rw-------  1 postgres postgres 16777216 Mar  9 23:02 000000010000000000000002
+drwx------  2 postgres postgres     4096 Mar  9 23:00 archive_status
+root@a7b99539cd5d:/var/lib/postgresql/data/pg_wal# du -h .
+4.0K    ./archive_status
+33M     .
+```
+или так:
+```console
+vboxuser@Ubuntu22:~$ psql -h localhost -p 6432 -U postgres postgres
+Password for user postgres:
+psql (15.1 (Ubuntu 15.1-1.pgdg22.04+1), server 14.6 (Debian 14.6-1.pgdg110+1))
+Type "help" for help.
+
+postgres=# SELECT * FROM pg_ls_waldir() ORDER BY modification;
+           name           |   size   |      modification
+--------------------------+----------+------------------------
+ 000000010000000000000001 | 16777216 | 2023-03-09 23:01:55+00
+ 000000010000000000000002 | 16777216 | 2023-03-09 23:02:40+00
+(2 rows)
+```
+LSN = 0/23841F0:
+```console
+postgres=# select pg_current_wal_insert_lsn();
+ pg_current_wal_insert_lsn
+---------------------------
+ 0/23841F0
+(1 row)
+```
+
+`pg_controldata`:
+```console
+root@a7b99539cd5d:/var/lib/postgresql/data/pg_wal# pg_controldata
+pg_control version number:            1300
+Catalog version number:               202107181
+Database system identifier:           7208685268148084774
+Database cluster state:               in production
+pg_control last modified:             Thu 09 Mar 2023 11:02:33 PM UTC
+Latest checkpoint location:           0/2384140
+Latest checkpoint's REDO location:    0/237F038
+Latest checkpoint's REDO WAL file:    000000010000000000000002
+Latest checkpoint's TimeLineID:       1
+Latest checkpoint's PrevTimeLineID:   1
+Latest checkpoint's full_page_writes: on
+Latest checkpoint's NextXID:          0:745
+Latest checkpoint's NextOID:          24576
+Latest checkpoint's NextMultiXactId:  1
+Latest checkpoint's NextMultiOffset:  0
+Latest checkpoint's oldestXID:        727
+Latest checkpoint's oldestXID's DB:   1
+Latest checkpoint's oldestActiveXID:  745
+Latest checkpoint's oldestMultiXid:   1
+Latest checkpoint's oldestMulti's DB: 1
+Latest checkpoint's oldestCommitTsXid:0
+Latest checkpoint's newestCommitTsXid:0
+Time of latest checkpoint:            Thu 09 Mar 2023 11:02:33 PM UTC
+Fake LSN counter for unlogged rels:   0/3E8
+Minimum recovery ending location:     0/0
+Min recovery ending loc's timeline:   0
+Backup start location:                0/0
+Backup end location:                  0/0
+End-of-backup record required:        no
+wal_level setting:                    replica
+wal_log_hints setting:                off
+max_connections setting:              100
+max_worker_processes setting:         8
+max_wal_senders setting:              10
+max_prepared_xacts setting:           0
+max_locks_per_xact setting:           64
+track_commit_timestamp setting:       off
+Maximum data alignment:               8
+Database block size:                  8192
+Blocks per segment of large relation: 131072
+WAL block size:                       8192
+Bytes per WAL segment:                16777216
+Maximum length of identifiers:        64
+Maximum columns in an index:          32
+Maximum size of a TOAST chunk:        1996
+Size of a large-object chunk:         2048
+Date/time type storage:               64-bit integers
+Float8 argument passing:              by value
+Data page checksum version:           0
+Mock authentication nonce:            8bb002d3401ba9516d5ab95db8264eeb7ba06b1038e8c22b05abdb26f988c039
+```
+
+`pg_stat_bgwriter`:
+```
+postgres=# SELECT * FROM pg_stat_bgwriter \gx
+-[ RECORD 1 ]---------+------------------------------
+checkpoints_timed     | 20
+checkpoints_req       | 1
+checkpoint_write_time | 20976
+checkpoint_sync_time  | 60
+buffers_checkpoint    | 199
+buffers_clean         | 0
+maxwritten_clean      | 0
+buffers_backend       | 3186
+buffers_backend_fsync | 0
+buffers_alloc         | 505
+stats_reset           | 2023-03-09 23:00:32.827573+00
+```
+
 
 ## 3. Измерьте, какой объем журнальных файлов был сгенерирован за это время. Оцените, какой объем приходится в среднем на одну контрольную точку.
 
@@ -156,7 +293,7 @@ log_checkpoints = on
 |Определить файл по LSN|SELECT pg_walfile_name('0/196D76F0');|
 |Определить файл+смещение по LSN|SELECT file_name, upper(to_hex(file_offset)) file_offset FROM pg_walfile_name_offset('0/331E4E64');|
 |Вывести список wal-файлов|SELECT * FROM pg_ls_waldir() ORDER BY modification;|
-|Статистика+ bgwriter|SELECT * FROM pg_stat_bgwriter;|
+|Статистика+ bgwriter|SELECT * FROM pg_stat_bgwriter \gx|
 |Настройки checkpoint|SELECT name, setting, unit, short_desc FROM pg_settings WHERE name like '%checkpoint%';|
 |Настройки WAL|SELECT name, setting, unit, short_desc FROM pg_settings WHERE name like '%wal%';|
 |Настройки логирования|SELECT name, setting, unit, short_desc FROM pg_settings WHERE name IN ('data_directory','logging_collector','log_directory','log_filename');|
