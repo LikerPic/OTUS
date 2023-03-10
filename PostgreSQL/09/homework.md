@@ -672,9 +672,124 @@ tps = 728.590500 (without initial connection time)
 ```
 
 ## 6. Создайте новый кластер с включенной контрольной суммой страниц. Создайте таблицу. Вставьте несколько значений. Выключите кластер. Измените пару байт в таблице. Включите кластер и сделайте выборку из таблицы. Что и почему произошло? как проигнорировать ошибку и продолжить работу?
+Настройки CRC:
+```console
+postgres=# SELECT name, setting, unit, short_desc FROM pg_settings WHERE name like '%checksum%';
+          name           | setting | unit |                          short_desc
+-------------------------+---------+------+--------------------------------------------------------------
+ data_checksums          | off     |      | Показывает, включён ли в этом кластере контроль целостности данных.
+ ignore_checksum_failure | off     |      | Продолжает обработку при ошибке контрольной суммы.
+(2 rows)
+```
+
+Остановим кластер:
+```console
+vboxuser@Ubuntu22:~$ pg_lsclusters
+Ver Cluster Port Status Owner     Data directory              Log file
+15  main    5432 online <unknown> /var/lib/postgresql/15/main /var/log/postgresql/postgresql-15-main.log
+
+vboxuser@Ubuntu22:~$ sudo -u postgres pg_ctlcluster 15 main stop
+Warning: stopping the cluster using pg_ctlcluster will mark the systemd unit as failed. Consider using systemctl:
+  sudo systemctl stop postgresql@15-main
+```
+
+Воспользуемся утилитой `pg_checksums` для включения CRC в БД:
+```console
+vboxuser@Ubuntu22:/usr/lib/postgresql/15/bin$ sudo -u postgres ./pg_checksums -e -D /var/lib/postgresql/15/main
+Checksum operation completed
+Files scanned:   1545
+Blocks scanned:  4674
+Files written:  1276
+Blocks written: 4674
+pg_checksums: syncing data directory
+pg_checksums: updating control file
+Checksums enabled in cluster
+```
+
+```console
+vboxuser@Ubuntu22:/usr/lib/postgresql/15/bin$ sudo -u postgres pg_ctlcluster 15 main start
+Warning: the cluster will not be running as a systemd service. Consider using systemctl:
+  sudo systemctl start postgresql@15-main
+vboxuser@Ubuntu22:/usr/lib/postgresql/15/bin$ sudo -u postgres psql
+psql (15.1 (Ubuntu 15.1-1.pgdg22.04+1))
+Type "help" for help.
+
+postgres=# SELECT name, setting, unit FROM pg_settings WHERE name like '%checksum%';
+          name           | setting | unit
+-------------------------+---------+------
+ data_checksums          | on      |
+ ignore_checksum_failure | off     |
+(2 rows)
+```
+
+Добавим таблицу:
+```
+postgres=# CREATE DATABASE db_lesson 9
+postgres-# ;
+ERROR:  syntax error at or near "9"
+LINE 1: CREATE DATABASE db_lesson 9
+                                  ^
+postgres=# CREATE DATABASE db_lesson9;
+CREATE DATABASE
+postgres=# \c db_lesson9
+You are now connected to database "db_lesson9" as user "postgres".
+db_lesson9=# CREATE TABLE tbl_lesson9 (lucky_num int);
+CREATE TABLE
+db_lesson9=# INSERT INTO tbl_lesson9 VALUES (555);
+INSERT 0 1
+db_lesson9=# INSERT INTO tbl_lesson9 VALUES (777);
+INSERT 0 1
+db_lesson9=# SELECT * FROM tbl_lesson9;
+ lucky_num
+-----------
+       555
+       777
+(2 rows)
+
+db_lesson9=# SELECT pg_relation_filepath('tbl_lesson9');
+ pg_relation_filepath
+----------------------
+ base/16405/16406
+(1 row)
+```
+
+Остановим кластер и испортим файл таблицы:
+```console
+vboxuser@Ubuntu22:/usr/lib/postgresql/15/bin$ sudo -u postgres pg_ctlcluster 15 main stop
+vboxuser@Ubuntu22:/usr/lib/postgresql/15/bin$ pg_lsclusters
+Ver Cluster Port Status Owner     Data directory              Log file
+15  main    5432 down   <unknown> /var/lib/postgresql/15/main /var/log/postgresql/postgresql-15-main.log
+vboxuser@Ubuntu22:/usr/lib/postgresql/15/bin$ cd ~
+vboxuser@Ubuntu22:~$ sudo dd if=/dev/zero of=/var/lib/postgresql/15/main/base/16405/16406 oflag=dsync conv=notrunc bs=1 count=8
+8+0 records in
+8+0 records out
+8 bytes copied, 0.0059 s, 1.4 kB/s
+```
+
+Запускаем кластер и проверяем данные в таблице:
+```console
+vboxuser@Ubuntu22:~$ sudo -u postgres pg_ctlcluster 15 main start
+Warning: the cluster will not be running as a systemd service. Consider using systemctl:
+  sudo systemctl start postgresql@15-main
+
+vboxuser@Ubuntu22:~$ sudo -u postgres psql
+postgres=# \c db_lesson9
+You are now connected to database "db_lesson9" as user "postgres".
+db_lesson9=# SELECT * FROM tbl_lesson9;
+WARNING:  page verification failed, calculated checksum 62374 but expected 31907
+ERROR:  invalid page in block 0 of relation base/16405/16406
+```
+
+При попытке обратиться к таблице с ошибкой возникает ошибка при проверке CRC:
+```diff
++> WARNING:  page verification failed, calculated checksum 62374 but expected 31907
++> ERROR:  invalid page in block 0 of relation base/16405/16406
+```
+
 
 
 ---
+
 **СПРАВОЧНО**
 
 Подготовка контейнера перед каждым тестом:
@@ -699,6 +814,7 @@ tps = 728.590500 (without initial connection time)
 |Настройки checkpoint|SELECT name, setting, unit, short_desc FROM pg_settings WHERE name like '%checkpoint%';|
 |Настройки WAL|SELECT name, setting, unit, short_desc FROM pg_settings WHERE name like '%wal%';|
 |Настройки логирования|SELECT name, setting, unit, short_desc FROM pg_settings WHERE name IN ('data_directory','logging_collector','log_directory','log_filename');|
+|Настройки CRC в БД|SELECT name, setting, unit, short_desc FROM pg_settings WHERE name like '%checksum%';|
 |Вывести LSN в заголовке страницы|SELECT lsn FROM page_header(get_raw_page('test_text',0));|
 |Получение дельты м/у двух LSN (байт)|SELECT '0/1672DB8'::pg_lsn - '0/1670928'::pg_lsn;|
 |Дамп содержимого журнала|pg_waldump -p . -s 0/1670928 -e 0/1672DB8 000000010000000000000001|
@@ -713,6 +829,7 @@ tps = 728.590500 (without initial connection time)
 |Настройка WAL|https://postgrespro.ru/docs/postgrespro/14/wal-configuration|
 |Тип pg_lsn|https://postgrespro.ru/docs/postgresql/15/datatype-pg-lsn|
 |Описание pg_stat_bgwriter|https://postgrespro.ru/docs/postgresql/13/monitoring-stats#MONITORING-PG-STAT-BGWRITER-VIEW|
+|Описание pgchecksums |https://postgrespro.ru/docs/postgresql/14/app-pgchecksums|
 
 
 
