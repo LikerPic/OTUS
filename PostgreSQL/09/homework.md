@@ -786,6 +786,18 @@ ERROR:  invalid page in block 0 of relation base/16405/16406
 +> ERROR:  invalid page in block 0 of relation base/16405/16406
 ```
 
+Для игнорирования ошибки CRC воспользуемся параметром `ignore_checksum_failure` и попробуем зачитать данные:
+```
+db_lesson9=# SET ignore_checksum_failure=on;
+SET
+db_lesson9=# SELECT * FROM tbl_lesson9;
+WARNING:  page verification failed, calculated checksum 62374 but expected 31907
+ lucky_num
+-----------
+       555
+       777
+(2 rows)
+```
 
 
 ---
