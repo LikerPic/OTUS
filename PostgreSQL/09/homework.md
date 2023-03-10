@@ -543,6 +543,134 @@ root@a7b99539cd5d:/var/lib/postgresql/data/log# cat postgresql-2023-03-09_230033
 
 ## 5. Сравните tps в синхронном/асинхронном режиме утилитой pgbench. Объясните полученный результат.
 
+Запустим кластер в синхронном режиме с параметрами:
+```diff
++> fsync = on
++> synchronous_commit = on
+```
+
+```console
+vboxuser@Ubuntu22:~$ psql -h localhost -p 6432 -U postgres -c "select name,setting from pg_settings where name IN ('fsync','synchronous_commit')"
+Password for user postgres:
+        name        | setting
+--------------------+---------
+ fsync              | on
+ synchronous_commit | on
+(2 rows)
+
+vboxuser@Ubuntu22:~$ pgbench -i -h localhost -p 6432 -U postgres postgres
+Password:
+dropping old tables...
+NOTICE:  table "pgbench_accounts" does not exist, skipping
+NOTICE:  table "pgbench_branches" does not exist, skipping
+NOTICE:  table "pgbench_history" does not exist, skipping
+NOTICE:  table "pgbench_tellers" does not exist, skipping
+creating tables...
+generating data (client-side)...
+100000 of 100000 tuples (100%) done (elapsed 0.07 s, remaining 0.00 s)
+vacuuming...
+creating primary keys...
+done in 0.54 s (drop tables 0.00 s, create tables 0.01 s, client-side generate 0.30 s, vacuum 0.12 s, primary keys 0.11 s).
+vboxuser@Ubuntu22:~$ pgbench -c 8 -P 60 -T 600 -h localhost -p 6432 -U postgres postgres
+Password:
+pgbench (15.1 (Ubuntu 15.1-1.pgdg22.04+1), server 14.6 (Debian 14.6-1.pgdg110+1))
+starting vacuum...end.
+progress: 60.0 s, 478.9 tps, lat 16.637 ms stddev 9.240, 0 failed
+progress: 120.0 s, 465.7 tps, lat 17.170 ms stddev 9.502, 0 failed
+progress: 180.0 s, 379.3 tps, lat 21.079 ms stddev 12.539, 0 failed
+progress: 240.0 s, 378.6 tps, lat 21.124 ms stddev 12.126, 0 failed
+progress: 300.0 s, 380.2 tps, lat 21.031 ms stddev 11.834, 0 failed
+progress: 360.0 s, 436.7 tps, lat 18.310 ms stddev 10.490, 0 failed
+progress: 420.0 s, 457.9 tps, lat 17.463 ms stddev 9.760, 0 failed
+progress: 480.0 s, 470.9 tps, lat 16.982 ms stddev 9.427, 0 failed
+progress: 540.0 s, 489.4 tps, lat 16.342 ms stddev 8.870, 0 failed
+progress: 600.0 s, 487.2 tps, lat 16.411 ms stddev 8.785, 0 failed
+transaction type: <builtin: TPC-B (sort of)>
+scaling factor: 1
+query mode: simple
+number of clients: 8
+number of threads: 1
+maximum number of tries: 1
+duration: 600 s
+number of transactions actually processed: 265504
+number of failed transactions: 0 (0.000%)
+latency average = 18.065 ms
+latency stddev = 10.375 ms
+initial connection time = 213.366 ms
+tps = 442.650864 (without initial connection time)
+```
+
+Остановим кластер, удалим контейнер, отредактируем конфиг:
+```diff
++> fsync = off
++> synchronous_commit = off
+```
+
+Запустим снова нагрузочный тест
+```console
+vboxuser@Ubuntu22:/media/sf_Upload$ docker stop pg_lesson9; docker rm pg_lesson9
+pg_lesson9
+pg_lesson9
+vboxuser@Ubuntu22:/media/sf_Upload$ docker run -d --name pg_lesson9 -v "$PWD/my-postgres.conf":/etc/postgresql/postgresql.conf -e POSTGRES_PASSWORD=postgres -p 6432:5432 postgres:14 -c "config_file=/etc/postgresql/postgresql.conf"
+e9fa68c647aa49ee988f1ba65a15e41ef39fb9c661cc9597f8f6fdb3ee9dc8de
+
+vboxuser@Ubuntu22:~$ psql -h localhost -p 6432 -U postgres -c "select name,setting from pg_settings where name IN ('fsync','synchronous_commit')"
+Password for user postgres:
+        name        | setting
+--------------------+---------
+ fsync              | off
+ synchronous_commit | off
+(2 rows)
+
+vboxuser@Ubuntu22:~$ pgbench -i -h localhost -p 6432 -U postgres postgres
+Password:
+dropping old tables...
+NOTICE:  table "pgbench_accounts" does not exist, skipping
+NOTICE:  table "pgbench_branches" does not exist, skipping
+NOTICE:  table "pgbench_history" does not exist, skipping
+NOTICE:  table "pgbench_tellers" does not exist, skipping
+creating tables...
+generating data (client-side)...
+100000 of 100000 tuples (100%) done (elapsed 0.07 s, remaining 0.00 s)
+vacuuming...
+creating primary keys...
+done in 0.49 s (drop tables 0.00 s, create tables 0.01 s, client-side generate 0.27 s, vacuum 0.13 s, primary keys 0.09 s).
+
+vboxuser@Ubuntu22:~$ pgbench -c 8 -P 60 -T 600 -h localhost -p 6432 -U postgres postgres
+Password:
+pgbench (15.1 (Ubuntu 15.1-1.pgdg22.04+1), server 14.6 (Debian 14.6-1.pgdg110+1))
+starting vacuum...end.
+progress: 60.0 s, 722.0 tps, lat 11.030 ms stddev 5.319, 0 failed
+progress: 120.0 s, 724.0 tps, lat 11.041 ms stddev 5.208, 0 failed
+progress: 180.0 s, 727.3 tps, lat 10.992 ms stddev 5.186, 0 failed
+progress: 240.0 s, 731.1 tps, lat 10.935 ms stddev 5.174, 0 failed
+progress: 300.0 s, 737.3 tps, lat 10.842 ms stddev 4.922, 0 failed
+progress: 360.0 s, 727.1 tps, lat 10.994 ms stddev 5.156, 0 failed
+progress: 420.0 s, 715.1 tps, lat 11.178 ms stddev 5.329, 0 failed
+progress: 480.0 s, 729.0 tps, lat 10.966 ms stddev 5.284, 0 failed
+progress: 540.0 s, 736.9 tps, lat 10.848 ms stddev 5.050, 0 failed
+progress: 600.0 s, 733.4 tps, lat 10.900 ms stddev 5.079, 0 failed
+transaction type: <builtin: TPC-B (sort of)>
+scaling factor: 1
+query mode: simple
+number of clients: 8
+number of threads: 1
+maximum number of tries: 1
+duration: 600 s
+number of transactions actually processed: 437008
+number of failed transactions: 0 (0.000%)
+latency average = 10.972 ms
+latency stddev = 5.172 ms
+initial connection time = 218.700 ms
+tps = 728.590500 (without initial connection time)
+```
+
+Результат:
+```diff
++> TPS = 443 - синхронный режим записи в журнал
++> TPS = 729 - асинхронный режим записи в журнал
+```
+
 ## 6. Создайте новый кластер с включенной контрольной суммой страниц. Создайте таблицу. Вставьте несколько значений. Выключите кластер. Измените пару байт в таблице. Включите кластер и сделайте выборку из таблицы. Что и почему произошло? как проигнорировать ошибку и продолжить работу?
 
 
@@ -552,7 +680,7 @@ root@a7b99539cd5d:/var/lib/postgresql/data/log# cat postgresql-2023-03-09_230033
 Подготовка контейнера перед каждым тестом:
 1. `docker stop pg_lesson9; docker rm pg_lesson9`
 2. Редактируем конфиг файл `my-postgres.conf`
-3. `docker run -d --name pg_lesson8 -v "$PWD/my-postgres.conf":/etc/postgresql/postgresql.conf -e POSTGRES_PASSWORD=postgres -p 6432:5432 postgres:14 -c "config_file=/etc/postgresql/postgresql.conf"`
+3. `docker run -d --name pg_lesson9 -v "$PWD/my-postgres.conf":/etc/postgresql/postgresql.conf -e POSTGRES_PASSWORD=postgres -p 6432:5432 postgres:14 -c "config_file=/etc/postgresql/postgresql.conf"`
 
 Запуск каждого теста:
 1. `pgbench -i -h localhost -p 6432 -U postgres postgres`
