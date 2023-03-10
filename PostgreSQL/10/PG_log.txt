@@ -1,0 +1,35 @@
+2023-03-10 16:45:17.067 GMT [217] LOG:  process 217 acquired ShareLock on transaction 747 after 1854731.942 ms
+2023-03-10 16:45:17.067 GMT [217] CONTEXT:  while updating tuple (0,1) in relation "clients"
+2023-03-10 16:45:17.067 GMT [217] STATEMENT:  update clients SET name='Bob' where id=1;
+2023-03-10 16:45:17.067 GMT [218] LOG:  process 218 acquired ExclusiveLock on tuple (0,1) of relation 16388 of database 16384 after 1716028.574 ms
+2023-03-10 16:45:17.067 GMT [218] STATEMENT:  update clients SET name='Alice' where id=1;
+2023-03-10 16:45:17.267 GMT [218] LOG:  process 218 still waiting for ShareLock on transaction 749 after 200.118 ms
+2023-03-10 16:45:17.267 GMT [218] DETAIL:  Process holding the lock: 217. Wait queue: 218.
+2023-03-10 16:45:17.267 GMT [218] CONTEXT:  while rechecking updated tuple (0,3) in relation "clients"
+2023-03-10 16:45:17.267 GMT [218] STATEMENT:  update clients SET name='Alice' where id=1;
+2023-03-10 16:54:01.175 GMT [218] LOG:  process 218 acquired ShareLock on transaction 749 after 524107.551 ms
+2023-03-10 16:54:01.175 GMT [218] CONTEXT:  while rechecking updated tuple (0,3) in relation "clients"
+2023-03-10 16:54:01.175 GMT [218] STATEMENT:  update clients SET name='Alice' where id=1;
+2023-03-10 17:05:41.012 GMT [217] LOG:  process 217 still waiting for ShareLock on transaction 752 after 200.117 ms
+2023-03-10 17:05:41.012 GMT [217] DETAIL:  Process holding the lock: 82. Wait queue: 217.
+2023-03-10 17:05:41.012 GMT [217] CONTEXT:  while updating tuple (0,6) in relation "clients"
+2023-03-10 17:05:41.012 GMT [217] STATEMENT:  update clients SET name='Bob' where id=1;
+2023-03-10 17:06:09.358 GMT [82] LOG:  process 82 still waiting for ShareLock on transaction 754 after 202.144 ms
+2023-03-10 17:06:09.358 GMT [82] DETAIL:  Process holding the lock: 218. Wait queue: 82.
+2023-03-10 17:06:09.358 GMT [82] CONTEXT:  while updating tuple (0,2) in relation "clients"
+2023-03-10 17:06:09.358 GMT [82] STATEMENT:  update clients SET name='John2' where id=2;
+2023-03-10 17:06:18.429 GMT [218] LOG:  process 218 detected deadlock while waiting for ExclusiveLock on tuple (0,6) of relation 16388 of database 16384 after 200.948 ms
+2023-03-10 17:06:18.429 GMT [218] DETAIL:  Process holding the lock: 217. Wait queue: .
+2023-03-10 17:06:18.429 GMT [218] STATEMENT:  update clients SET name='Alice2' where id=1;
+2023-03-10 17:06:18.430 GMT [218] ERROR:  deadlock detected
+2023-03-10 17:06:18.430 GMT [218] DETAIL:  Process 218 waits for ExclusiveLock on tuple (0,6) of relation 16388 of database 16384; blocked by process 217.
+        Process 217 waits for ShareLock on transaction 752; blocked by process 82.
+        Process 82 waits for ShareLock on transaction 754; blocked by process 218.
+        Process 218: update clients SET name='Alice2' where id=1;
+        Process 217: update clients SET name='Bob' where id=1;
+        Process 82: update clients SET name='John2' where id=2;
+2023-03-10 17:06:18.430 GMT [218] HINT:  See server log for query details.
+2023-03-10 17:06:18.430 GMT [218] STATEMENT:  update clients SET name='Alice2' where id=1;
+2023-03-10 17:06:18.430 GMT [82] LOG:  process 82 acquired ShareLock on transaction 754 after 9274.218 ms
+2023-03-10 17:06:18.430 GMT [82] CONTEXT:  while updating tuple (0,2) in relation "clients"
+2023-03-10 17:06:18.430 GMT [82] STATEMENT:  update clients SET name='John2' where id=2;
