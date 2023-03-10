@@ -254,7 +254,43 @@ lock=# select * from locks_v ;
 
 ## 3. Воспроизведите взаимоблокировку трех транзакций. Можно ли разобраться в ситуации постфактум, изучая журнал сообщений?
 
-## 4. Могут ли две транзакции, выполняющие единственную команду UPDATE одной и той же таблицы (без where), заблокировать друг друга?
+|Команда|ТЕРМИНАЛ 1|ТЕРМИНАЛ 2|ТЕРМИНАЛ 3|
+|-|-|-|-|
+|BEGIN;|BEGIN|BEGIN|BEGIN|
+|pg_backend_pid()| 82|217 | 218|
+|1 update  |UPDATE id=1|||
+|2 update  ||UPDATE id=1 (засыпает)||
+|3 update  |||UPDATE id=2|
+|4 update  |UPDATE id=2 (засыпает)|||
+|5 update  |||UPDATE id=1 (ошибка)|
+|  |(просыпается)|||
+
+После попытки третьм терминалом встречно заблокировать строку id=1 возникает ошибка и транзакция отменяется (?):
+```sql
+lock=# begin;
+BEGIN
+lock=*# update clients SET name='Alice' where id=2;
+UPDATE 1
+lock=*# update clients SET name='Alice2' where id=1;
+ERROR:  deadlock detected
+DETAIL:  Process 218 waits for ExclusiveLock on tuple (0,6) of relation 16388 of database 16384; blocked by process 217.
+Process 217 waits for ShareLock on transaction 752; blocked by process 82.
+Process 82 waits for ShareLock on transaction 754; blocked by process 218.
+HINT:  See server log for query details.
+```
+
+В логах сервера видим чуть более развернутое пояснение с deadlock:
+```console
+2023-03-10 17:06:18.430 GMT [218] ERROR:  deadlock detected
+2023-03-10 17:06:18.430 GMT [218] DETAIL:  Process 218 waits for ExclusiveLock on tuple (0,6) of relation 16388 of database 16384; blocked by process 217.
+        Process 217 waits for ShareLock on transaction 752; blocked by process 82.
+        Process 82 waits for ShareLock on transaction 754; blocked by process 218.
+        Process 218: update clients SET name='Alice2' where id=1;
+        Process 217: update clients SET name='Bob' where id=1;
+        Process 82: update clients SET name='John2' where id=2;
+2023-03-10 17:06:18.430 GMT [218] HINT:  See server log for query details.
+```
+Полный лог [здесь](PG_log.txt)
 
 
 
@@ -265,8 +301,27 @@ lock=# select * from locks_v ;
 |Описание|Команда|
 |-|-|
 |Настройки блокировок|select name,setting,unit,short_desc from pg_settings where name similar to 'lock%|%\_lock%|%deadlock%|%n\_statement';|
+||SELECT pg_backend_pid();|
+||SELECT txid_current();|
+||SELECT pg_sleep(1);|
+||SELECT pg_blocking_pids(187);|
+||SELECT hashtext('пример');|
+||SELECT pg_advisory_lock(hashtext('пример'));|
+||SELECT pg_advisory_unlock(hashtext('пример'));|
+||SELECT * FROM pgrowlocks('accounts') \gx|
+||SELECT * FROM pg_locks;|
+||SELECT * FROM pg_stat_activity WHERE pid = ANY(pg_blocking_pids(187)) \gx|
+||SELECT * FROM heap_page_items(get_raw_page('accounts',0));|
+||SELECT datname FROM pg_database;|
+||SELECT relname FROM pg_class;|
+||SELECT rolname FROM pg_authid;|
+||SELECT nspname FROM pg_namespace;|
+
+
 
 ---
 **ССЫЛКИ**
 |Описание|Ссылка|
 |-|-|
+||https://postgrespro.com/blog/pgsql/5968020|
+||https://www.postgresql.org/docs/15/explicit-locking.html|
