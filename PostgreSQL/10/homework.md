@@ -100,6 +100,110 @@ root@40d695990f10:/var/lib/postgresql/data/log# tail -n 4 postgresql-2023-03-10_
 
 ## 2. Смоделируйте ситуацию обновления одной и той же строки тремя командами UPDATE в разных сеансах. Изучите возникшие блокировки в представлении pg_locks и убедитесь, что все они понятны. Пришлите список блокировок и объясните, что значит каждая.
 
+Подготовим таблицу `clients` и представление для `pg_locks`
+```console
+lock=# create table clients (id int PRIMARY KEY, name varchar(200));
+CREATE TABLE
+lock=# insert into clients VALUES (1,'Nick');
+INSERT 0 1
+lock=# insert into clients VALUES (2,'Helen');
+INSERT 0 1
+lock=# select * from clients ;
+ id | name
+----+-------
+  1 | Nick
+  2 | Helen
+(2 rows)
+
+lock=# CREATE VIEW locks_v AS
+SELECT pid,
+       locktype,
+       CASE locktype
+         WHEN 'relation' THEN relation::regclass::text
+         WHEN 'transactionid' THEN transactionid::text
+         WHEN 'tuple' THEN relation::regclass::text||':'||tuple::text
+       END AS lockid,
+       mode,
+       granted
+FROM pg_locks
+WHERE locktype in ('relation','transactionid','tuple')
+AND (locktype != 'relation' OR relation = 'clients'::regclass);
+CREATE VIEW
+```
+
+
+|Команда|ТЕРМИНАЛ 1|ТЕРМИНАЛ 2|ТЕРМИНАЛ 3|
+|-|-|-|-|
+|BEGIN;|BEGIN|BEGIN|BEGIN|
+|txid_current()| 743|749 | 750|
+|pg_backend_pid()| 82|217 | 218|
+|update ... |UPDATE 1|Повис|Повис|
+После открытия транзакции видим появление трех (для каждого процесса своя) экслюзивных блокировок на объет типа `Транзакция`:
+```sql
+lock=*# select * from locks_v ;
+ pid |   locktype    | lockid |     mode      | granted
+-----+---------------+--------+---------------+---------
+  82 | transactionid | 747    | ExclusiveLock | t
+ 218 | transactionid | 750    | ExclusiveLock | t
+ 217 | transactionid | 749    | ExclusiveLock | t
+(3 rows)
+```
+
+ТЕРМИНАЛ 1 (PID=82): `update clients SET name='John' where id=1;`
+Видим добавление одной блокировки:
+- на таблицу `clients`;
+```sql
+lock=*# select * from locks_v ;
+ pid |   locktype    | lockid  |       mode       | granted
+-----+---------------+---------+------------------+---------
+  82 | relation      | clients | RowExclusiveLock | t
+  82 | transactionid | 747     | ExclusiveLock    | t
+ 217 | transactionid | 749     | ExclusiveLock    | t
+ 218 | transactionid | 750     | ExclusiveLock    | t
+(4 rows)
+```
+
+ТЕРМИНАЛ 2 (PID=217): `update clients SET name='Bob' where id=1;`
+Видим добавление трех блокировок:
+- на таблицу `clients` (как у первого процесса);
+- на строку 1 (tuple) таблицы `clients`;
+- на транзакцию 747 первого процесса (неуспешная блокировка)
+```sql
+lock=*# select * from locks_v ;
+ pid |   locktype    |  lockid   |       mode       | granted
+-----+---------------+-----------+------------------+---------
+  82 | relation      | clients   | RowExclusiveLock | t
+  82 | transactionid | 747       | ExclusiveLock    | t
+ 217 | relation      | clients   | RowExclusiveLock | t
+ 217 | tuple         | clients:1 | ExclusiveLock    | t
+ 217 | transactionid | 749       | ExclusiveLock    | t
+ 217 | transactionid | 747       | ShareLock        | f
+ 218 | transactionid | 750       | ExclusiveLock    | t
+(7 rows)
+```
+
+ТЕРМИНАЛ 3 (PID=218): `update clients SET name='Alice' where id=1;`
+Видим добавление двух блокировок:
+- на таблицу `clients` (как у первого процесса);
+- на строку 1 (tuple) таблицы `clients` (как у второго процесса) - пока неуспешный захват, т.к. блокировка экслюзивная;
+```sql
+lock=# select * from locks_v ;
+ pid |   locktype    |  lockid   |       mode       | granted
+-----+---------------+-----------+------------------+---------
+  82 | relation      | clients   | RowExclusiveLock | t
+  82 | transactionid | 747       | ExclusiveLock    | t
+ 217 | relation      | clients   | RowExclusiveLock | t
+ 217 | tuple         | clients:1 | ExclusiveLock    | t
+ 217 | transactionid | 749       | ExclusiveLock    | t
+ 217 | transactionid | 747       | ShareLock        | f
+ 218 | tuple         | clients:1 | ExclusiveLock    | f
+ 218 | relation      | clients   | RowExclusiveLock | t
+ 218 | transactionid | 750       | ExclusiveLock    | t
+(9 rows)
+```
+
+
+
 ## 3. Воспроизведите взаимоблокировку трех транзакций. Можно ли разобраться в ситуации постфактум, изучая журнал сообщений?
 
 ## 4. Могут ли две транзакции, выполняющие единственную команду UPDATE одной и той же таблицы (без where), заблокировать друг друга?
