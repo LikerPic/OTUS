@@ -138,6 +138,8 @@ CREATE VIEW
 |txid_current()| 743|749 | 750|
 |pg_backend_pid()| 82|217 | 218|
 |update ... |UPDATE 1|Повис|Повис|
+
+
 После открытия транзакции видим появление трех (для каждого процесса своя) экслюзивных блокировок на объет типа `Транзакция`:
 ```sql
 lock=*# select * from locks_v ;
@@ -148,8 +150,9 @@ lock=*# select * from locks_v ;
  217 | transactionid | 749    | ExclusiveLock | t
 (3 rows)
 ```
-
+---
 ТЕРМИНАЛ 1 (PID=82): `update clients SET name='John' where id=1;`
+
 Видим добавление одной блокировки:
 - на таблицу `clients`;
 ```sql
@@ -162,8 +165,9 @@ lock=*# select * from locks_v ;
  218 | transactionid | 750     | ExclusiveLock    | t
 (4 rows)
 ```
-
+---
 ТЕРМИНАЛ 2 (PID=217): `update clients SET name='Bob' where id=1;`
+
 Видим добавление трех блокировок:
 - на таблицу `clients` (как у первого процесса);
 - на строку 1 (tuple) таблицы `clients`;
@@ -181,11 +185,12 @@ lock=*# select * from locks_v ;
  218 | transactionid | 750       | ExclusiveLock    | t
 (7 rows)
 ```
-
+---
 ТЕРМИНАЛ 3 (PID=218): `update clients SET name='Alice' where id=1;`
+
 Видим добавление двух блокировок:
 - на таблицу `clients` (как у первого процесса);
-- на строку 1 (tuple) таблицы `clients` (как у второго процесса) - пока неуспешный захват, т.к. блокировка экслюзивная;
+- на строку id=1 (tuple) таблицы `clients` (как у второго процесса) - пока неуспешный захват, т.к. блокировка экслюзивная;
 ```sql
 lock=# select * from locks_v ;
  pid |   locktype    |  lockid   |       mode       | granted
@@ -201,7 +206,50 @@ lock=# select * from locks_v ;
  218 | transactionid | 750       | ExclusiveLock    | t
 (9 rows)
 ```
+---
+ТЕРМИНАЛ 1 (PID=82): `commit;`
 
+После этого:
+- процесс `82` (терминал 2) снимает обе блокировки и освобождает транзакцию для второго процесса;
+- второй процесс снял две блокировки: на чужую транзакцию и на строку id=1;
+- теперь третий процесс ожидает освобождения транзакции от второго процесса вместо ожидания строки id=1;
+- второй процесс просыпается и выполняет команду UPDATE.
+```sql
+lock=# select * from locks_v ;
+ pid |   locktype    | lockid  |       mode       | granted
+-----+---------------+---------+------------------+---------
+ 217 | relation      | clients | RowExclusiveLock | t
+ 217 | transactionid | 749     | ExclusiveLock    | t
+ 218 | relation      | clients | RowExclusiveLock | t
+ 218 | transactionid | 749     | ShareLock        | f
+ 218 | transactionid | 750     | ExclusiveLock    | t
+(5 rows)
+```
+
+---
+ТЕРМИНАЛ 2 (PID=217): `commit;`
+
+После этого:
+- второй процесс снимает обе оставшиеся блокировки;
+- третий процесс снимает блокировку на транзакцию второго процесса и просыпается
+```sql
+lock=# select * from locks_v ;
+ pid |   locktype    | lockid  |       mode       | granted
+-----+---------------+---------+------------------+---------
+ 218 | relation      | clients | RowExclusiveLock | t
+ 218 | transactionid | 750     | ExclusiveLock    | t
+(2 rows)
+```
+
+---
+ТЕРМИНАЛ 3 (PID=218): `commit;`
+Все блокировки сняты:
+```sql
+lock=# select * from locks_v ;
+ pid | locktype | lockid | mode | granted
+-----+----------+--------+------+---------
+(0 rows)
+```
 
 
 ## 3. Воспроизведите взаимоблокировку трех транзакций. Можно ли разобраться в ситуации постфактум, изучая журнал сообщений?
