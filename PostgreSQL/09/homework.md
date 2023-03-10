@@ -464,9 +464,67 @@ stats_reset           | 2023-03-09 23:00:32.827573+00
 
 ## 4. Проверьте данные статистики: все ли контрольные точки выполнялись точно по расписанию. Почему так произошло?
 
-Если тут речь про статичтику `pg_stat_bgwriter`, то не ясно как тут определять точность расписания. Тем более с учетом того, что в эту статистику записались КТ, не относящиеся к тесту.
+Если тут речь про статистику `pg_stat_bgwriter`, то не ясно как тут определять точность расписания. Тем более с учетом того, что в эту статистику записались КТ, не относящиеся к тесту.
 Самое надежное - это заглянуть в лог и посмотреть на отсечки времени.
 
+Краткий вариант лога:
+```console
+root@a7b99539cd5d:/var/lib/postgresql/data/log# cat postgresql-2023-03-09_230033.log
+2023-03-09 23:01:03.155 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:01:03.172 GMT [64] LOG:  checkpoint complete: wrote 3 buffers (0.3%); 0 
+2023-03-09 23:02:03.574 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:02:24.293 GMT [64] LOG:  checkpoint complete: wrote 197 buffers (19.2%);
+2023-03-09 23:02:33.302 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:02:33.644 GMT [64] LOG:  checkpoint complete: wrote 3 buffers (0.3%); 0 
+2023-03-09 23:13:34.158 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:14:01.178 GMT [64] LOG:  checkpoint complete: wrote 148 buffers (14.5%);
+2023-03-09 23:14:04.016 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:14:31.050 GMT [64] LOG:  checkpoint complete: wrote 114 buffers (11.1%);
+2023-03-09 23:14:34.135 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:15:01.059 GMT [64] LOG:  checkpoint complete: wrote 107 buffers (10.4%);
+2023-03-09 23:15:04.752 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:15:31.165 GMT [64] LOG:  checkpoint complete: wrote 187 buffers (18.3%);
+2023-03-09 23:15:34.223 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:16:01.043 GMT [64] LOG:  checkpoint complete: wrote 131 buffers (12.8%);
+2023-03-09 23:16:04.840 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:16:31.058 GMT [64] LOG:  checkpoint complete: wrote 163 buffers (15.9%);
+2023-03-09 23:16:34.250 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:17:01.083 GMT [64] LOG:  checkpoint complete: wrote 108 buffers (10.5%);
+2023-03-09 23:17:04.612 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:17:31.074 GMT [64] LOG:  checkpoint complete: wrote 158 buffers (15.4%);
+2023-03-09 23:17:34.291 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:18:01.117 GMT [64] LOG:  checkpoint complete: wrote 95 buffers (9.3%); 0
+2023-03-09 23:18:04.805 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:18:31.041 GMT [64] LOG:  checkpoint complete: wrote 150 buffers (14.6%);
+2023-03-09 23:18:34.306 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:19:01.044 GMT [64] LOG:  checkpoint complete: wrote 92 buffers (9.0%); 0
+2023-03-09 23:19:04.816 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:19:31.112 GMT [64] LOG:  checkpoint complete: wrote 147 buffers (14.4%);
+2023-03-09 23:19:34.401 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:20:01.043 GMT [64] LOG:  checkpoint complete: wrote 109 buffers (10.6%);
+2023-03-09 23:20:04.544 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:20:31.086 GMT [64] LOG:  checkpoint complete: wrote 123 buffers (12.0%);
+2023-03-09 23:20:34.320 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:21:01.037 GMT [64] LOG:  checkpoint complete: wrote 82 buffers (8.0%); 0
+2023-03-09 23:21:04.768 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:21:31.105 GMT [64] LOG:  checkpoint complete: wrote 119 buffers (11.6%);
+2023-03-09 23:21:34.271 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:22:01.106 GMT [64] LOG:  checkpoint complete: wrote 81 buffers (7.9%); 0
+2023-03-09 23:22:04.066 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:22:31.088 GMT [64] LOG:  checkpoint complete: wrote 104 buffers (10.2%);
+2023-03-09 23:22:34.418 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:23:01.033 GMT [64] LOG:  checkpoint complete: wrote 85 buffers (8.3%); 0
+2023-03-09 23:23:04.807 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:23:31.095 GMT [64] LOG:  checkpoint complete: wrote 128 buffers (12.5%);
+2023-03-09 23:24:04.334 GMT [64] LOG:  checkpoint starting: time
+2023-03-09 23:24:31.074 GMT [64] LOG:  checkpoint complete: wrote 261 buffers (25.5%);
+```
+Полная версия лога [здесь](PG_log.txt)
+
+С учетом заданного периода = 30с, ожидаемое время записи КТ = 30*0,9 = 27с.
+Судя пол логу, вреия записи КТ четко выдерживается. Во время теста четко выдерживалось и расписание запуска КТ. Исключение - после теста был подин пропуск и далее записалась одна КТ.
+
+![PG](PG_log.png)
 
 
 ## 5. Сравните tps в синхронном/асинхронном режиме утилитой pgbench. Объясните полученный результат.
