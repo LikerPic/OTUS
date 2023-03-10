@@ -88,6 +88,7 @@ postgres=# SELECT name, setting, unit, short_desc FROM pg_settings WHERE name IN
 (4 rows)
 ```
 Из интересного:
+- `wal_segment_size` - размер WAK-файла. Дефолт 16777216 = 16 МБ
 - `wal_keep_size` - позволяет хранить файлы WAL в заданном минимальной объеме (`min_wal_size` здесь не срабатывает почему-то)
 - `fsync` - по сути включает/отключает синхронный режим записи журнла.
 
@@ -107,11 +108,11 @@ postgres=# SELECT name, setting, unit, short_desc FROM pg_settings WHERE name IN
 - `wal_keep_size` = 200
 ---
 Итого, кластер будем запускать с такими настройками `my-postgres.conf`:
-```
-checkpoint_timeout = 30s
-wal_keep_size = 200
-logging_collector = on
-log_checkpoints = on
+```diff
++ checkpoint_timeout = 30s
++ wal_keep_size = 200
++ logging_collector = on
++ log_checkpoints = on
 ```
 
 ## 2. 10 минут c помощью утилиты pgbench подавайте нагрузку.
@@ -364,7 +365,10 @@ postgres=# SELECT * FROM pg_ls_waldir() ORDER BY modification;
 ```
 Перед тестом в каталоге последний файлом был `02`. Далее система дошла до `1E`. То есть по время теста было записано 28 журнальных файлов.
 
-28 * 16 МБ = **448 МБ** - полный объем записанных жернальных файлов во время теста.
+Полный объем записанных жернальных файлов во время теста:
+```diff
++ 28 * 16 МБ = 448 МБ
+```
 
 Так как весь тест не уместился в объем журнальных файлов, то методы определения объема жернала по содержимому файлов не помогут.
 
@@ -386,8 +390,10 @@ postgres=# SELECT '0/1E0F7B70'::pg_lsn - '0/23841F0'::pg_lsn;
  467089792
 (1 row)
 ```
-То есть точный размер журнала во времия теста = **445 МБ**
 
+```diff
++ То есть точный размер журнала во времия теста = 445 МБ
+```
 
 ```console
 root@a7b99539cd5d:/var/lib/postgresql/data/pg_wal# pg_controldata
@@ -460,7 +466,10 @@ buffers_alloc         | 205756
 stats_reset           | 2023-03-09 23:00:32.827573+00
 ```
 Судя по всему второй вызов pg_stat_bgwriter был с некоторым запозданием после окончания теста, поэтому в эту статистику попали лишние КТ.
-За 10 минут теста должно было записаться 20 КТ. Средний размер КТ = 445 / 20 = **22 МБ**
+За 10 минут теста должно было записаться 20 КТ. 
+```diff
++ Средний размер КТ = 445 / 20 = **22 МБ**
+```
 
 ## 4. Проверьте данные статистики: все ли контрольные точки выполнялись точно по расписанию. Почему так произошло?
 
@@ -569,7 +578,9 @@ root@a7b99539cd5d:/var/lib/postgresql/data/log# cat postgresql-2023-03-09_230033
 |-|-|
 |Как найти лог|https://www.endpointdev.com/blog/2014/11/dear-postgresql-where-are-my-logs/|
 |Статья про WAL|https://habr.com/ru/company/postgrespro/blog/459250/|
+|Настройка WAL|https://postgrespro.ru/docs/postgrespro/14/wal-configuration|
 |Тип pg_lsn|https://postgrespro.ru/docs/postgresql/15/datatype-pg-lsn|
 |Описание pg_stat_bgwriter|https://postgrespro.ru/docs/postgresql/13/monitoring-stats#MONITORING-PG-STAT-BGWRITER-VIEW|
+
 
 
