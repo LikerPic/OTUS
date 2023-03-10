@@ -672,6 +672,9 @@ tps = 728.590500 (without initial connection time)
 ```
 
 ## 6. Создайте новый кластер с включенной контрольной суммой страниц. Создайте таблицу. Вставьте несколько значений. Выключите кластер. Измените пару байт в таблице. Включите кластер и сделайте выборку из таблицы. Что и почему произошло? как проигнорировать ошибку и продолжить работу?
+
+Для проверки CRC воспользуемся инстансом PG в VM (в контейнере не получается делать start/stop сервису, запускать pg_checksums)
+
 Настройки CRC:
 ```console
 postgres=# SELECT name, setting, unit, short_desc FROM pg_settings WHERE name like '%checksum%';
@@ -780,7 +783,7 @@ WARNING:  page verification failed, calculated checksum 62374 but expected 31907
 ERROR:  invalid page in block 0 of relation base/16405/16406
 ```
 
-При попытке обратиться к таблице с ошибкой возникает ошибка при проверке CRC:
+При попытке обратиться к испорченной таблице возникает ошибка проверки CRC:
 ```diff
 +> WARNING:  page verification failed, calculated checksum 62374 but expected 31907
 +> ERROR:  invalid page in block 0 of relation base/16405/16406
@@ -798,7 +801,7 @@ WARNING:  page verification failed, calculated checksum 62374 but expected 31907
        777
 (2 rows)
 ```
-
+ОК - данные подтянулись.
 
 ---
 
