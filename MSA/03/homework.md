@@ -2,7 +2,10 @@
 
 ## 1. Выберите кейс. Кейс можно взять стандартный интернет-магазин или выбрать одну из архитектурных кат Нила Форда: https://nealford.com/katas/list.html
 
-Выбрал кейс [Architectural Katas](https://nealford.com/katas/kata?id=LightsPlease)
+```diff
++Выбрал кейс [Architectural Katas]
+```
+Ссылка: [Architectural Katas](https://nealford.com/katas/kata?id=LightsPlease)
 
 `Lights, Please`
 
@@ -23,7 +26,9 @@ each system will be sold to consumers (small families), but the company expects 
 - collects data from customers who opt in to gather broader statistics
 - international company
 
-В переводе:
+```diff
++В переводе:
+```
 
 `Свет, пожалуйста`
 
