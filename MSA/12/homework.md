@@ -14,7 +14,7 @@
 
 
 **Запуск:**
-Ссылка на манифесты: 
+Ссылка на манифесты: https://github.com/LikerPic/OTUS/tree/master/MSA/12/Manifest
 Добавляем строку в hosts: 
 ```console
 127.0.0.1 arch.homework
