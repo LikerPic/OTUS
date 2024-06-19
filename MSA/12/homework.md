@@ -12,9 +12,10 @@
 0) ссылку на github c манифестами. Манифесты должны лежать в одной директории, так чтобы можно было их все применить одной командой `kubectl apply -f .`<BR>
 1) url, по которому можно будет получить ответ от сервиса (либо тест в postmanе).<BR>
 
+<BR>
 
 **Запуск:**
-Ссылка на манифесты: https://github.com/LikerPic/OTUS/tree/master/MSA/12/Manifest
+Ссылка на манифесты: https://github.com/LikerPic/OTUS/tree/master/MSA/12/Manifest<BR>
 Добавляем строку в hosts: 
 ```console
 127.0.0.1 arch.homework
@@ -39,6 +40,6 @@ curl http://arch.homework/health
 ```console
 curl -H "Host: arch.homework" http://localhost/health
 {"status" : "OK"}
-```console
+```
 
 
