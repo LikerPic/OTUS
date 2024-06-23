@@ -42,4 +42,54 @@ curl -H "Host: arch.homework" http://localhost/health
 {"status" : "OK"}
 ```
 
+## Задание со звездой
+В Ingress-е должно быть правило, которое форвардит все запросы с `/otusapp/{student name}/*` на сервис с rewrite-ом пути. Где `{student name}` - это имя студента.<BR>
+Например: `curl arch.homework/otusapp/aeugene/health` -> рерайт пути на `arch.homework/health` <BR>
+<BR>
+
+В манифест Ingress добавляем annotations:
+```console
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /health
+```
+
+И добавляем еще один path:
+```console
+      - path: /otusapp/LikerPic(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: health-service
+            port:
+              number: 8000
+```
+
+Проверяем:
+```console
+curl http://arch.homework/otusapp/LikerPic/anytest
+{"status" : "OK"}
+```
+
+```diff
++Работает!
+```
+
+Смущает только то, на самом деле это не редирект, а отдельный `path`, который просто ссылается на тот же самый сервис. Не уверен, что срабатывает именно редирект на /helath <BR>
+Если посмотреть ответный заголовок по запросу, то нет изменения Location:
+```console
+>curl -i http://arch.homework/otusapp/LikerPic/anytest
+HTTP/1.1 200 OK
+Date: Sun, 23 Jun 2024 16:07:15 GMT
+Content-Type: application/json
+Content-Length: 17
+Connection: keep-alive
+
+{"status" : "OK"}
+```
+
+
+
+Описание rewrite:<BR>
+https://github.com/kubernetes/ingress-nginx/blob/main/docs/examples/rewrite/README.md
 
