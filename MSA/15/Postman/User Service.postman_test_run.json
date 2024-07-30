@@ -1,0 +1,154 @@
+{
+	"id": "1ef24b9b-4b42-40e2-8876-92364199d4ac",
+	"name": "User Service",
+	"timestamp": "2024-07-30T20:53:48.373Z",
+	"collection_id": "36607989-9f4a0104-7706-4d52-a549-772d633e7872",
+	"folder_id": 0,
+	"environment_id": "0",
+	"totalPass": 0,
+	"delay": 0,
+	"persist": true,
+	"status": "finished",
+	"startedAt": "2024-07-30T20:53:47.047Z",
+	"totalFail": 0,
+	"results": [
+		{
+			"id": "5ec9031b-1d30-4ead-a88b-027b04f9cd73",
+			"name": "Create user",
+			"url": "http://arch.homework/user",
+			"time": 56,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				56
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "a6b45041-d6ae-4342-8b52-6c436d6971eb",
+			"name": "find user by id",
+			"url": "http://arch.homework/user/17",
+			"time": 39,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				39
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "c10c0a48-3254-41ba-bdd5-47280636a62c",
+			"name": "update User",
+			"url": "http://arch.homework/user/17",
+			"time": 37,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				37
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "1f7e7059-b811-4d22-8c1f-60efa395516f",
+			"name": "find user by id 2",
+			"url": "http://arch.homework/user/17",
+			"time": 36,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				36
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "cc34a15d-9f66-4a0d-a434-47d7bb58ec91",
+			"name": "delete User",
+			"url": "http://arch.homework/user/17",
+			"time": 37,
+			"responseCode": {
+				"code": 204,
+				"name": "Deleted"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				37
+			],
+			"allTests": [
+				{}
+			]
+		},
+		{
+			"id": "5706cf68-59d5-4e4c-b487-df97d16c826c",
+			"name": "find user by id 3",
+			"url": "http://arch.homework/user/17",
+			"time": 34,
+			"responseCode": {
+				"code": 404,
+				"name": "NOT FOUND"
+			},
+			"tests": {},
+			"testPassFailCounts": {},
+			"times": [
+				34
+			],
+			"allTests": [
+				{}
+			]
+		}
+	],
+	"count": 1,
+	"totalTime": 239,
+	"collection": {
+		"requests": [
+			{
+				"id": "5ec9031b-1d30-4ead-a88b-027b04f9cd73",
+				"method": "POST"
+			},
+			{
+				"id": "a6b45041-d6ae-4342-8b52-6c436d6971eb",
+				"method": "GET"
+			},
+			{
+				"id": "c10c0a48-3254-41ba-bdd5-47280636a62c",
+				"method": "PUT"
+			},
+			{
+				"id": "1f7e7059-b811-4d22-8c1f-60efa395516f",
+				"method": "GET"
+			},
+			{
+				"id": "cc34a15d-9f66-4a0d-a434-47d7bb58ec91",
+				"method": "DELETE"
+			},
+			{
+				"id": "5706cf68-59d5-4e4c-b487-df97d16c826c",
+				"method": "GET"
+			}
+		]
+	}
+}
