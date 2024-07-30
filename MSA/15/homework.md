@@ -33,7 +33,7 @@ Postman коллекция, в которой будут представлен�
 
 **Запуск:**
 Ссылка на чарт: https://github.com/LikerPic/OTUS/tree/master/MSA/15/helm_chart<BR>
-
+Копируем чарт себе в каталог `helm_chart`<BR>
 Создаем инсталляцию
 ```console
 helm install server-crud helm_chart
@@ -42,7 +42,15 @@ helm install server-crud helm_chart
 
 Проверяем:
 ```console
-
+>curl http://arch.homework/user/16
+{
+"id": 16,
+"username": "super_user",
+"firstName": "Ivan",
+"lastName": "Petrov",
+"email": "ivan@gmail.com",
+"phone": "+79001234567"
+}
 ```
 
 ```diff
