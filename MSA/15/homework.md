@@ -32,15 +32,14 @@ Postman коллекция, в которой будут представлен�
 <BR>
 
 **Запуск:**
-Ссылка на чарт: https://github.com/LikerPic/OTUS/tree/master/MSA/15/helm_chart<BR>
-Копируем чарт себе в каталог `helm_chart`<BR>
-Создаем инсталляцию
+1. Ссылка на чарт: https://github.com/LikerPic/OTUS/tree/master/MSA/15/helm_chart<BR>
+2. Копируем чарт себе в каталог `helm_chart`<BR>
+3. Создаем инсталляцию
 ```console
 helm install server-crud helm_chart
 ```
 
-
-Проверяем:
+4. Проверяем:
 ```console
 >curl http://arch.homework/user/16
 {
@@ -56,12 +55,17 @@ helm install server-crud helm_chart
 ```diff
 +Работает!
 ```
-
-Удаляем инсталляцию
+5. Удаляем инсталляцию
 ```console
 helm uninstall server-crud
 ```
 
+**Postman**<BR>
+2.1. Ссылка на тесты Postman: https://github.com/LikerPic/OTUS/tree/a771a399073b9c99c63183726335e3eed2df546e/MSA/15/Postman<BR>
+2.2. Скриншоты с тестами:<BR><BR>
 
+![Tests totals](Postman/Results_totals_screenshot.PNG)<BR>
+
+![Tests](Postman/Results_screenshot.PNG)
 
 
