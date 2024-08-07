@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cm-pg-init
+data:
+  init.sql: |
+
+    CREATE TABLE CLIENTS (
+        Id SERIAL PRIMARY KEY, 
+        username VARCHAR(200),
+        firstName VARCHAR(200),
+        lastName VARCHAR(200),
+        email VARCHAR(200),
+        phone VARCHAR(12)
+    );
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sc-pg-env
+data:
+  POSTGRES_DB: ZGJfdGVzdA==       # db_test
+  POSTGRES_USER: bGlidXNlcg==     # libuser
+  POSTGRES_PASSWORD: bGlidXNlcg== # libuser
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sc-server-env
+data:
+  SRV_DB_USR: bGlidXNlcg==
+  SRV_DB_PWD: bGlidXNlcg==
+  SRV_DB_NAME: ZGJfdGVzdA== 
+  SRV_DB_HOST: c3ZjLXBnLXNlcnZlcg== # svc-pg-server
+  SRV_DB_PORT: NTQzMg== # 5432

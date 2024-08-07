@@ -1,0 +1,22 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: svcm-metrics-monitor
+  labels:
+    app: svcm-metrics-monitor
+    
+spec:
+  endpoints:
+    - port: metrics
+      interval: 10s
+      scrapeTimeout: 10s
+      path: /metrics
+      honorLabels: true
+      scheme: http
+  namespaceSelector:
+    matchNames:
+      - default
+  selector:
+    matchLabels:
+      app: server-crud
+  
