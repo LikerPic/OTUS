@@ -27,10 +27,10 @@
 
 **Результат:**
 
-0) Скриншот Dashboard
-![Tests totals](Postman/Results_totals_screenshot.PNG)<BR>
+0) Скриншот Dashboard<BR>
+![Pic 1. Grafana Dashboard.png]<BR>
 
-1) Dashboard Grafana: [Grafana Server CRUD Dashboard v3.json]
+1) Dashboard Grafana: Grafana Server CRUD Dashboard v3.json
 
 
 **Запуск:**
