@@ -28,9 +28,9 @@
 **Результат:**
 
 0) Скриншот Dashboard<BR>
-![Pic 1. Grafana Dashboard.png]<BR>
+![Grafana Dashboard](https://github.com/LikerPic/OTUS/blob/master/MSA/18/Pic%201.%20Grafana%20Dashboard.png)<BR>
 
-1) Dashboard Grafana: Grafana Server CRUD Dashboard v3.json
+1) Dashboard Grafana: [Grafana Server CRUD Dashboard v3.json](https://github.com/LikerPic/OTUS/blob/master/MSA/18/Grafana%20Server%20CRUD%20Dashboard%20v3.json)
 
 
 **Запуск:**
@@ -62,17 +62,28 @@ helm upgrade server-crud helm_chart
 ```console
 helm uninstall server-crud
 ```
+<BR><BR><BR>
 
 **Попутно:**
 1. Адрес для входа на UI Прометея: `localhost:9090` => Status -> Targets
 2. Адрес для входа на UI Grafana  `localhost:9000` (admin / prom-operator)
 3. Мануал по настройке Прометей Оператора: https://github.com/prometheus-operator/kube-prometheus
-4. Команды для подачи нагрузки:
+4. Описание для настройки мониторинга ingress https://kubernetes.github.io/ingress-nginx/user-guide/monitoring/
+5. Команды для подачи нагрузки:
 ```console
 FOR /L %G IN (1,1,10000) DO curl arch.homework/health
 FOR /L %G IN (1,1,10000) DO curl arch.homework/user/8
 ```
+<BR><BR><BR>
 
+**Наблюдения:**
+![Pic 0](https://github.com/LikerPic/OTUS/blob/master/MSA/18/Pic%200.%20Service%20metrics.png)<BR>
+![Pic 2.](https://github.com/LikerPic/OTUS/blob/master/MSA/18/Pic%202.%20Prometheus%20Targets2.png)<BR>
+![Pic 2.1.](https://github.com/LikerPic/OTUS/blob/master/MSA/18/Pic%202.1.%20ServiceMonitor.%20Scrape%20periods%201.png)<BR>
+![Pic 2.2.](https://github.com/LikerPic/OTUS/blob/master/MSA/18/Pic%202.1.%20ServiceMonitor.%20Scrape%20periods%202.png)<BR>
+![Pic 3.](https://github.com/LikerPic/OTUS/blob/master/MSA/18/Pic%203.%20Mistake.%20scrapeTimeout.png)<BR>
+![Pic 4.](https://github.com/LikerPic/OTUS/blob/master/MSA/18/Pic%204.%20Mistake.%20Metric%20name.png)<BR>
+![Pic 5.](https://github.com/LikerPic/OTUS/blob/master/MSA/18/Pic%205.%20Monitoring%20arch.png)<BR>
 
 
 
