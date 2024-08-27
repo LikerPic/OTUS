@@ -155,11 +155,14 @@ curl -v -H "Authorization: eyAgImFsZyI6ICJIUzI1NiJ9.eyAic3ViIjogImphY2siLCAianRp
 ```console
 helm uninstall server-crud
 ```
+<BR>
 
 
 **Приложение**
+<BR>
 Пример проверки токена на сайте `jwt.io`
 ```console
 eyAgImFsZyI6ICJIUzI1NiJ9.eyAic3ViIjogImphY2siLCAianRpIjogIjU5N2MxNzY3LTM0OTEtYTMwZC04NzgzLTc5ZDQ3ZmZkODY5OSJ9.i1vRKE7yV8yGRxDmwhCE6UXMFB6fAfH_coUULwKs0Bg
 ```
 ![JWT](jwt_check.png)
+Ссылка: https://jwt.io/#debugger-io?token=eyAgImFsZyI6ICJIUzI1NiJ9.eyAic3ViIjogImphY2siLCAianRpIjogIjU5N2MxNzY3LTM0OTEtYTMwZC04NzgzLTc5ZDQ3ZmZkODY5OSJ9.i1vRKE7yV8yGRxDmwhCE6UXMFB6fAfH_coUULwKs0Bg
