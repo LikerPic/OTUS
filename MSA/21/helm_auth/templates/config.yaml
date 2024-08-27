@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cm-pg-auth-init
+data:
+  init.sql: |
+
+    DROP TABLE IF EXISTS USERS_AUTH;
+    CREATE TABLE USERS_AUTH(Id SERIAL PRIMARY KEY,
+        username VARCHAR(256) UNIQUE,
+        pwd VARCHAR(256)
+    );
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sc-pg-auth-env
+data:
+  POSTGRES_DB: ZGJfdGVzdA==       # db_test
+  POSTGRES_USER: bGlidXNlcg==     # libuser
+  POSTGRES_PASSWORD: bGlidXNlcg== # libuser
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sc-server-auth-env
+data:
+  SRV_DB_USR: bGlidXNlcg==
+  SRV_DB_PWD: bGlidXNlcg==
+  SRV_DB_NAME: ZGJfdGVzdA== 
+  SRV_DB_HOST: c3ZjLXBnLWF1dGg= # svc-pg-auth
+  SRV_DB_PORT: NTQzMg== # 5432
+  SRV_JWT_SECRET: VFJPI0xPI0xP # TRO#LO#LO
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cm-pg-user-init
+data:
+  init.sql: |
+
+    DROP TABLE IF EXISTS Users ;
+    CREATE TABLE Users (Id SERIAL PRIMARY KEY,
+    username VARCHAR(256) UNIQUE,
+    firstName VARCHAR(256),
+    lastName VARCHAR(256),
+    email VARCHAR(256),
+    phone VARCHAR(12)
+    );
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sc-pg-user-env
+data:
+  POSTGRES_DB: ZGJfdGVzdA==       # db_test
+  POSTGRES_USER: bGlidXNlcg==     # libuser
+  POSTGRES_PASSWORD: bGlidXNlcg== # libuser
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sc-server-user-env
+data:
+  SRV_DB_USR: bGlidXNlcg==
+  SRV_DB_PWD: bGlidXNlcg==
+  SRV_DB_NAME: ZGJfdGVzdA== 
+  SRV_DB_HOST: c3ZjLXBnLXVzZXI= # svc-pg-user
+  SRV_DB_PORT: NTQzMg== # 5432
+  SRV_JWT_SECRET: VFJPI0xPI0xP # TRO#LO#LO

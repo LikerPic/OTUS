@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-pg-auth
+  labels:
+    type: local
+    app: my-database
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/data/db_auth"
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-pg-user
+  labels:
+    type: local
+    app: my-database
+spec:
+  storageClassName: manual2
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/data/db_user"

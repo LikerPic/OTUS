@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-pg-auth
+  labels:
+    app: pg-auth-base
+spec:
+  type: NodePort
+  ports:
+    - port: 5432
+  selector:
+    app: pg-auth-base
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-auth
+  labels:
+    app: server-auth
+spec:
+  selector:
+    app: server-auth
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+      name: metrics
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-pg-user
+  labels:
+    app: pg-user-base
+spec:
+  type: NodePort
+  ports:
+    - port: 5432
+  selector:
+    app: pg-user-base
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-user
+  labels:
+    app: server-user
+spec:
+  selector:
+    app: server-user
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+      name: metrics

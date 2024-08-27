@@ -1,0 +1,212 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server-auth-deployment
+  labels:
+    app: server-auth
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: server-auth
+  template:
+    metadata:
+      labels:
+        app: server-auth
+    spec:
+      containers:
+      - name: server-auth
+        image: likerpic/server_auth:1.0.1
+        ports:
+        - containerPort: 8000
+          name: metrics
+        env:
+          - name: SRV_DB_USR
+            valueFrom:
+              secretKeyRef:
+                name: sc-server-auth-env
+                key: SRV_DB_USR
+          - name: SRV_DB_PWD
+            valueFrom:
+              secretKeyRef:
+                name: sc-server-auth-env
+                key: SRV_DB_PWD
+          - name: SRV_DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: sc-server-auth-env
+                key: SRV_DB_NAME
+          - name: SRV_DB_HOST
+            valueFrom:
+              secretKeyRef:
+                name: sc-server-auth-env
+                key: SRV_DB_HOST
+          - name: SRV_DB_PORT
+            valueFrom:
+              secretKeyRef:
+                name: sc-server-auth-env
+                key: SRV_DB_PORT
+          - name: SRV_JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: sc-server-auth-env
+                key: SRV_JWT_SECRET
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ss-pg-auth
+spec:
+  serviceName: "postgres"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pg-auth-base
+  template:
+    metadata:
+      labels:
+        app: pg-auth-base
+    spec:
+      containers:
+        - name: pg-auth-server
+          image: postgres:14
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: sc-pg-auth-env
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: sc-pg-auth-env
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sc-pg-auth-env
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: vol-pg-auth-data
+              mountPath: /var/lib/postgresql/data
+            - name: vol-pg-auth-init
+              mountPath: /docker-entrypoint-initdb.d
+
+      volumes:
+        - name: vol-pg-auth-init
+          configMap:
+            name: cm-pg-auth-init
+
+        - name: vol-pg-auth-data
+          persistentVolumeClaim:
+            claimName: pvc-pg-auth
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server-user-deployment
+  labels:
+    app: server-user
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: server-user
+  template:
+    metadata:
+      labels:
+        app: server-user
+    spec:
+      containers:
+      - name: server-user
+        image: likerpic/server_user:1.0
+        ports:
+        - containerPort: 8000
+          name: metrics
+        env:
+          - name: SRV_DB_USR
+            valueFrom:
+              secretKeyRef:
+                name: sc-server-user-env
+                key: SRV_DB_USR
+          - name: SRV_DB_PWD
+            valueFrom:
+              secretKeyRef:
+                name: sc-server-user-env
+                key: SRV_DB_PWD
+          - name: SRV_DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: sc-server-user-env
+                key: SRV_DB_NAME
+          - name: SRV_DB_HOST
+            valueFrom:
+              secretKeyRef:
+                name: sc-server-user-env
+                key: SRV_DB_HOST
+          - name: SRV_DB_PORT
+            valueFrom:
+              secretKeyRef:
+                name: sc-server-user-env
+                key: SRV_DB_PORT
+          - name: SRV_JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: sc-server-user-env
+                key: SRV_JWT_SECRET
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ss-pg-user
+spec:
+  serviceName: "postgres"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pg-user-base
+  template:
+    metadata:
+      labels:
+        app: pg-user-base
+    spec:
+      containers:
+        - name: pg-user-server
+          image: postgres:14
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: sc-pg-user-env
+                  key: POSTGRES_DB
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: sc-pg-user-env
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sc-pg-user-env
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: vol-pg-user-data
+              mountPath: /var/lib/postgresql/data
+            - name: vol-pg-user-init
+              mountPath: /docker-entrypoint-initdb.d
+
+      volumes:
+        - name: vol-pg-user-init
+          configMap:
+            name: cm-pg-user-init
+
+        - name: vol-pg-user-data
+          persistentVolumeClaim:
+            claimName: pvc-pg-user
