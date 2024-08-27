@@ -37,7 +37,11 @@
 проверка, что пользователь2 не имеет доступа на чтение и редактирование профиля пользователя1.
 
 
+**Арх. схема**<BR>
+![Arch](gateway_network.png)
 
+**Postman**<BR>
+Ссылка на тесты Postman: https://github.com/LikerPic/OTUS/blob/master/MSA/21/Postman/tests.postman_collection.json<BR>
 
 
 **Запуск:**
@@ -152,11 +156,6 @@ curl -v -H "Authorization: eyAgImFsZyI6ICJIUzI1NiJ9.eyAic3ViIjogImphY2siLCAianRp
 helm uninstall server-crud
 ```
 
-**Postman**<BR>
-2.1. Ссылка на тесты Postman: <BR>
-2.2. Скриншоты с тестами:<BR><BR>
 
-
-![Arch](gateway_network.png)
 
 
